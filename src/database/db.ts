@@ -108,6 +108,23 @@ export const deleteLive = async (id: number): Promise<SQLite.SQLiteRunResult> =>
 };
 
 /**
+ * IDを指定してライブ情報を更新する
+ * @param live 更新するライブ情報（IDを含む）
+ * @returns Promise<SQLite.SQLiteRunResult>
+ */
+export const updateLive = async (live: Live): Promise<SQLite.SQLiteRunResult> => {
+  return db.runAsync(
+    'UPDATE lives SET liveName = ?, liveDate = ?, venueName = ?, artistName = ?, imagePath = ? WHERE id = ?;',
+    live.liveName,
+    live.liveDate,
+    live.venueName || null,
+    live.artistName || null,
+    live.imagePath || null,
+    live.id
+  );
+};
+
+/**
  * 新しい曲をセットリストに追加する
  * @param item 追加するセットリストの項目
  * @returns Promise<SQLite.SQLiteRunResult>

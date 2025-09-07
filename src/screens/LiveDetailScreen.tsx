@@ -1,46 +1,45 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Button, ScrollView } from 'react-native';
-import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getLiveById, getSetlistsForLive, Live, Setlist } from '../database/db';
 import { RootStackParamList } from '../../App';
 
-// この画面が受け取るReact Navigationのpropsの型を定義
-type LiveDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LiveDetail'>;
-type LiveDetailScreenRouteProp = RouteProp<RootStackParamList, 'LiveDetail'>;
+// スクリーンが受け取るprops全体の型を定義
+type LiveDetailScreenProps = NativeStackScreenProps<RootStackParamList, 'LiveDetail'>;
 
-export const LiveDetailScreen = () => {
-  // Navigationフックを使って画面遷移やルート情報の取得
-  const navigation = useNavigation<LiveDetailScreenNavigationProp>();
-  const route = useRoute<LiveDetailScreenRouteProp>();
-  const { liveId } = route.params; 
+export const LiveDetailScreen = ({ route, navigation }: LiveDetailScreenProps) => {
+  const { liveId } = route.params;
 
-  // 画面で表示するライブ情報とセットリストの状態を管理
   const [live, setLive] = useState<Live | null>(null);
   const [setlist, setSetlist] = useState<Setlist[]>([]);
 
-  // この画面が表示されるたびに、データベースから最新の情報を取得
+  useLayoutEffect(() => {
+    if (live) {
+      navigation.setOptions({
+        title: live.liveName,
+        headerRight: () => (
+          <Button
+            onPress={() => navigation.navigate('AddLive', { liveId: live.id })}
+            title="編集"
+          />
+        ),
+      });
+    }
+  }, [navigation, live]);
+
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
-        try {
-          const liveData = await getLiveById(liveId);
-          const setlistData = await getSetlistsForLive(liveId);
-          setLive(liveData);
-          setSetlist(setlistData);
-
-          if (liveData) {
-            navigation.setOptions({ title: liveData.liveName });
-          }
-        } catch (error) {
-          console.error("Failed to load live details:", error);
-        }
+        const liveData = await getLiveById(liveId);
+        const setlistData = await getSetlistsForLive(liveId);
+        setLive(liveData);
+        setSetlist(setlistData);
       };
       loadData();
-    }, [liveId, navigation])
+    }, [liveId])
   );
 
-  
   if (!live) {
     return (
       <View style={styles.loadingContainer}>
@@ -49,7 +48,6 @@ export const LiveDetailScreen = () => {
     );
   }
 
-  // セットリストの各項目をレンダリングする関数
   const renderSetlistItem = ({ item }: { item: Setlist }) => (
     <View style={styles.setlistItem}>
       <Text style={styles.trackNumber}>{item.trackNumber}.</Text>
@@ -59,14 +57,12 @@ export const LiveDetailScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* ライブの基本情報を表示するヘッダー部分 */}
       <View style={styles.header}>
         <Text style={styles.liveName}>{live.liveName}</Text>
         <Text style={styles.detailText}>{live.artistName}</Text>
         <Text style={styles.detailText}>{live.venueName} / {live.liveDate}</Text>
       </View>
 
-      {/* セットリストを表示するコンテナ */}
       <View style={styles.setlistContainer}>
         <Text style={styles.sectionTitle}>セットリスト</Text>
         {setlist.length === 0 ? (
@@ -76,7 +72,7 @@ export const LiveDetailScreen = () => {
             data={setlist}
             renderItem={renderSetlistItem}
             keyExtractor={(item) => item.id.toString()}
-            scrollEnabled={false} 
+            scrollEnabled={false}
           />
         )}
         <View style={styles.buttonContainer}>
@@ -90,6 +86,7 @@ export const LiveDetailScreen = () => {
   );
 };
 
+// ... (stylesは変更ありません)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

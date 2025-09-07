@@ -1,68 +1,36 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Button,
-  StyleSheet,
-  Alert,
-  TouchableOpacity,
-  Platform,
-} from 'react-native';
-import Toast from 'react-native-toast-message';
-import { addLive} from '../database/db';
+import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity, Platform } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import Toast from 'react-native-toast-message';
+import { addLive, updateLive, Live } from '../database/db';
 
-// propsの型を定義
 type LiveFormProps = {
-  onSave: () => void; // 保存が成功したときに呼び出す関数
+  onSave: () => void;
+  initialData?: Live;
 };
 
-export const LiveForm = ({ onSave }: LiveFormProps) => {
-  const [liveName, setLiveName] = useState('');
-  const [venueName, setVenueName] = useState('');
-  const [artistName, setArtistName] = useState('');
-  
-  const [date, setDate] = useState(new Date());
+export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
+  const [liveName, setLiveName] = useState(initialData?.liveName || '');
+  const [venueName, setVenueName] = useState(initialData?.venueName || '');
+  const [artistName, setArtistName] = useState(initialData?.artistName || '');
+  const [date, setDate] = useState(initialData?.liveDate ? new Date(initialData.liveDate) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const onChangeDate = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'ios') {
-      setShowDatePicker(false);
-    }
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-      if(event.type === 'dismissed') {
-        return;
-      }
-    }
-    
+    setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setDate(selectedDate);
     }
   };
 
-  const showDatepicker = () => {
-    setShowDatePicker(true);
-  };
+  const showDatepicker = () => setShowDatePicker(true);
+  
+  const formatDateForDisplay = (d: Date): string => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 
-  /**
-   * 日付をユーザー向けの表示形式（YYYY年M月D日）にフォーマットする関数
-   */
-  const formatDateForDisplay = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    return `${year}年${month}月${day}日`;
-  };
-
-  /**
-   * 日付をデータベース保存用の形式（YYYY-MM-DD）にフォーマットする関数
-   */
-  const formatDateForDatabase = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
+  const formatDateForDatabase = (d: Date): string => {
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 
@@ -74,25 +42,25 @@ export const LiveForm = ({ onSave }: LiveFormProps) => {
     }
 
     try {
-      // データベースに保存
-      await addLive({ liveName, liveDate, venueName, artistName });
-      
-      Toast.show({
-        type: 'success',
-        text1: '保存しました',
-        text2: `${liveName} の情報を記録しました。`,
-      });
-
-      // 保存が成功したら、一覧画面に戻る処理を呼び出す
+      if (initialData) {
+        // 編集モードの場合：updateLiveを呼び出す
+        await updateLive({
+          ...initialData,
+          liveName,
+          liveDate,
+          venueName,
+          artistName,
+        });
+        Toast.show({ type: 'success', text1: '更新しました' });
+      } else {
+        // 新規追加モードの場合：addLiveを呼び出す
+        await addLive({ liveName, liveDate, venueName, artistName });
+        Toast.show({ type: 'success', text1: '保存しました' });
+      }
       onSave();
     } catch (error) {
-      // エラー時のToastメッセージ
-      Toast.show({
-        type: 'error',
-        text1: '保存に失敗しました',
-        text2: 'エラーが発生しました。もう一度お試しください。',
-      });
       console.error(error);
+      Toast.show({ type: 'error', text1: '保存に失敗しました' });
     }
   };
 
@@ -107,21 +75,17 @@ export const LiveForm = ({ onSave }: LiveFormProps) => {
       />
       
       <Text style={styles.label}>日付 *</Text>
-      {/* ボタンのテキストは表示用の日付形式を使用 */}
       <TouchableOpacity onPress={showDatepicker} style={styles.datePickerButton}>
         <Text style={styles.datePickerButtonText}>{formatDateForDisplay(date)}</Text>
       </TouchableOpacity>
       
-
       {showDatePicker && (
         <DateTimePicker
-          testID="dateTimePicker"
           value={date}
           mode="date"
-          is24Hour={true}
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={onChangeDate}
-          locale="ja-JP" // カレンダーを日本語表示にする
+          locale="ja-JP"
         />
       )}
 
@@ -141,7 +105,10 @@ export const LiveForm = ({ onSave }: LiveFormProps) => {
         placeholder="例：Expo Band"
       />
 
-      <Button title="ライブ情報を保存" onPress={handleSaveLive} />
+      <Button
+        title={initialData ? "更新する" : "ライブ情報を保存"}
+        onPress={handleSaveLive}
+      />
     </View>
   );
 };

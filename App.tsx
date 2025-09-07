@@ -17,7 +17,7 @@ import { EditSetlistScreen } from './src/screens/EditSetlistScreen';
 
 export type RootStackParamList = {
   LiveList: undefined;
-  AddLive: undefined;
+  AddLive: { liveId?: number };
   LiveDetail: { liveId: number };
   AddSong: { liveId: number };
   EditSetlist: { liveId: number };
