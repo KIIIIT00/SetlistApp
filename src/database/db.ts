@@ -99,6 +99,15 @@ export const getSetlistsForLive = async (liveId: number): Promise<Setlist[]> => 
 };
 
 /**
+ * IDを指定してライブ情報を削除する
+ * @param id 削除するライブのID
+ * @returns Promise<SQLite.SQLiteRunResult>
+ */
+export const deleteLive = async (id: number): Promise<SQLite.SQLiteRunResult> => {
+  return await db.runAsync('DELETE FROM lives WHERE id = ?;', id);
+};
+
+/**
  * 新しい曲をセットリストに追加する
  * @param item 追加するセットリストの項目
  * @returns Promise<SQLite.SQLiteRunResult>
