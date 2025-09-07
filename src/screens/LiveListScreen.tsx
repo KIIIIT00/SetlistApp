@@ -25,7 +25,10 @@ export const LiveListScreen = () => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => <Button onPress={() => navigation.navigate({ name: 'AddLive', params: {} })} title="新規追加" />,
+      headerLeft: () => (
+        <Button onPress={() => navigation.navigate('Settings')} title="設定" />
+      ),
+      headerRight: () => <Button onPress={() => navigation.navigate('AddLive', {})} title="新規追加" />,
     });
   }, [navigation]);
 

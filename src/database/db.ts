@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite'; 
+import * as SQLite from 'expo-sqlite';
 
 // --- 型定義 ---
 export interface Live {
@@ -16,15 +16,13 @@ export interface Setlist {
   trackNumber: number;
   songName: string;
   memo?: string;
+  type: 'song' | 'header';
 }
 
-// --- データベース接続 ---
-// openDatabaseSyncで同期的にデータベースオブジェクトを開きます 
 const db = SQLite.openDatabaseSync('setlist.db');
 
 // --- データベース初期化関数 ---
 export const initDatabase = async (): Promise<void> => {
-  // execAsyncは複数のSQLをまとめて実行できます 
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
@@ -44,6 +42,7 @@ export const initDatabase = async (): Promise<void> => {
       trackNumber INTEGER NOT NULL,
       songName TEXT NOT NULL,
       memo TEXT,
+      type TEXT NOT NULL DEFAULT 'song',
       FOREIGN KEY (liveId) REFERENCES lives (id) ON DELETE CASCADE
     );
   `);
@@ -56,7 +55,6 @@ export const initDatabase = async (): Promise<void> => {
  * @returns Promise<SQLite.SQLiteRunResult>
  */
 export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunResult> => {
-  // runAsyncはINSERT, UPDATE, DELETEなどの書き込み処理に使います 
   return await db.runAsync(
     'INSERT INTO lives (liveName, liveDate, venueName, artistName, imagePath) VALUES (?, ?, ?, ?, ?);',
     live.liveName,
@@ -72,7 +70,6 @@ export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunR
  * @returns Promise<Live[]>
  */
 export const getLives = async (): Promise<Live[]> => {
-  // getAllAsyncは複数の行を取得するSELECT文に使い、指定した型で結果を返します 
   return await db.getAllAsync<Live>('SELECT * FROM lives ORDER BY liveDate DESC;');
 };
 
@@ -82,7 +79,6 @@ export const getLives = async (): Promise<Live[]> => {
  * @returns Promise<Live | null>
  */
 export const getLiveById = async (id: number): Promise<Live | null> => {
-  // getFirstAsyncは単一の行を取得する場合に使います
   return await db.getFirstAsync<Live>('SELECT * FROM lives WHERE id = ?;', id);
 };
 
@@ -146,18 +142,34 @@ export const addSetlistItem = async (
  * @param liveId 更新するライブのID
  * @param setlist 新しいセットリストの配列
  */
-export const updateSetlistForLive = async (liveId: number, setlist: Omit<Setlist, 'id' | 'liveId'>[]): Promise<void> => {
-  // まず、既存のセットリストをすべて削除
-  await db.runAsync('DELETE FROM setlists WHERE liveId = ?;', liveId);
+export const updateSetlistForLive = async (
+  liveId: number,
+  setlist: Omit<Setlist, 'id' | 'liveId'>[]
+): Promise<void> => {
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM setlists WHERE liveId = ?;', liveId);
 
-  // 新しいセットリストを順番に挿入
-  for (const item of setlist) {
-    await db.runAsync(
-      'INSERT INTO setlists (liveId, trackNumber, songName, memo) VALUES (?, ?, ?, ?);',
-      liveId,
-      item.trackNumber,
-      item.songName,
-      item.memo || null
-    );
-  }
+    for (const item of setlist) {
+      await db.runAsync(
+        'INSERT INTO setlists (liveId, trackNumber, songName, memo, type) VALUES (?, ?, ?, ?, ?);',
+        liveId,
+        item.trackNumber,
+        item.songName,
+        item.memo || null,
+        item.type
+      );
+    }
+  });
+};
+
+/*
+* すべてのライブとセットリストをエクスポート用に取得する
+*/
+export const getAllDataForExport = async () => {
+  const lives = await db.getAllAsync<Live>('SELECT * FROM lives;');
+  const setlists = await db.getAllAsync<Setlist>('SELECT * FROM setlists;');
+  return {
+    lives,
+    setlists,
+  };
 };

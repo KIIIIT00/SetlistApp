@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Keyboard, Modal } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import Toast from 'react-native-toast-message';
@@ -10,25 +10,21 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 type EditSetlistScreenRouteProp = RouteProp<RootStackParamList, 'EditSetlist'>;
 type EditSetlistScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'EditSetlist'>;
 
-type Song = Omit<Setlist, 'id' | 'liveId'> & { id?: number | string };
+type SongOrHeader = Omit<Setlist, 'id' | 'liveId'> & { id: number | string };
 
 export const EditSetlistScreen = () => {
   const navigation = useNavigation<EditSetlistScreenNavigationProp>();
   const route = useRoute<EditSetlistScreenRouteProp>();
   const { liveId } = route.params;
 
-  const [songs, setSongs] = useState<Song[]>([]);
-  const [newSongName, setNewSongName] = useState('');
-
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [currentlyEditingSong, setCurrentlyEditingSong] = useState<Song | null>(null);
-  const [editedSongName, setEditedSongName] = useState('');
+  const [items, setItems] = useState<SongOrHeader[]>([]);
+  const [inputText, setInputText] = useState('');
 
   useFocusEffect(
     useCallback(() => {
       const loadSetlist = async () => {
         const data = await getSetlistsForLive(liveId);
-        setSongs(data);
+        setItems(data);
       };
       loadSetlist();
     }, [liveId])
@@ -38,33 +34,31 @@ export const EditSetlistScreen = () => {
     navigation.setOptions({
       headerRight: () => <Button onPress={handleSave} title="保存" />,
     });
-  }, [navigation, songs]);
+  }, [navigation, items]);
 
-  const handleAddSong = () => {
-    if (!newSongName.trim()) return;
-    const newSong: Song = {
+  const handleAddItem = (type: 'song' | 'header') => {
+    if (!inputText.trim()) return;
+    const newItem: SongOrHeader = {
       id: `new_${Date.now()}`,
-      songName: newSongName.trim(),
-      trackNumber: songs.length + 1,
+      songName: inputText.trim(),
+      trackNumber: items.length + 1,
+      type: type,
     };
-    setSongs([...songs, newSong]);
-    setNewSongName('');
+    setItems([...items, newItem]);
+    setInputText('');
     Keyboard.dismiss();
   };
 
-  const handleDeleteSong = (songIdToDelete: number | string) => {
-    setSongs((currentSongs) =>
-      currentSongs.filter((song) => song.id !== songIdToDelete)
+  const handleDeleteItem = (itemIdToDelete: number | string) => {
+    setItems((currentItems) =>
+      currentItems.filter((item) => item.id !== itemIdToDelete)
     );
   };
 
   const handleSave = async () => {
-    const updatedSetlist = songs.map((song, index) => ({
-      ...song,
-      trackNumber: index + 1,
-    }));
+    const updatedItems = items.map((item, index) => ({ ...item, trackNumber: index + 1 }));
     try {
-      await updateSetlistForLive(liveId, updatedSetlist);
+      await updateSetlistForLive(liveId, updatedItems);
       Toast.show({ type: 'success', text1: 'セットリストを更新しました' });
       navigation.goBack();
     } catch (error) {
@@ -73,51 +67,39 @@ export const EditSetlistScreen = () => {
     }
   };
 
-  const openEditModal = (song: Song) => {
-    setCurrentlyEditingSong(song);
-    setEditedSongName(song.songName);
-    setIsEditModalVisible(true);
-  };
-
-  const closeEditModal = () => {
-    setIsEditModalVisible(false);
-    setCurrentlyEditingSong(null);
-    setEditedSongName('');
-  };
-
-  const handleUpdateSongName = () => {
-    if (!currentlyEditingSong || !editedSongName.trim()) return;
+  const renderItem = ({ item, drag, isActive }: RenderItemParams<SongOrHeader>) => {
+    if (item.type === 'header') {
+      return (
+        <ScaleDecorator>
+          <TouchableOpacity
+            onLongPress={drag}
+            disabled={isActive}
+            style={[styles.headerItem, { backgroundColor: isActive ? '#e0e0e0' : '#f0f0f0' }]}
+          >
+            <View style={styles.headerLine} />
+            <Text style={styles.headerText}>{item.songName.toUpperCase()}</Text>
+            <View style={styles.headerLine} />
+            <TouchableOpacity onPress={() => handleDeleteItem(item.id)} style={styles.deleteButtonAbsolute}>
+              <Text style={styles.deleteButtonText}>×</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </ScaleDecorator>
+      );
+    }
     
-    setSongs(currentSongs => 
-      currentSongs.map(song => 
-        song.id === currentlyEditingSong.id 
-          ? { ...song, songName: editedSongName.trim() } 
-          : song
-      )
-    );
-    
-    closeEditModal();
-  };
-
-
-  const renderItem = ({ item, drag, isActive }: RenderItemParams<Song>) => {
-    const currentIndex = songs.findIndex((song) => song.id === item.id);
+    const songIndex = items.slice(0, items.findIndex(i => i.id === item.id)).filter(i => i.type === 'song').length;
     return (
       <ScaleDecorator>
         <TouchableOpacity
-          onPress={() => openEditModal(item)}
           onLongPress={drag}
           disabled={isActive}
-          style={[styles.songItem, { backgroundColor: isActive ? '#f0f0f0' : '#fff' }]}
+          style={[styles.songItem, { backgroundColor: isActive ? '#f9f9f9' : '#fff' }]}
         >
           <View style={styles.songInfo}>
-            <Text style={styles.trackNumber}>{currentIndex + 1}.</Text>
+            <Text style={styles.trackNumber}>{songIndex + 1}.</Text>
             <Text style={styles.songName}>{item.songName}</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => handleDeleteSong(item.id!)}
-            style={styles.deleteButton}
-          >
+          <TouchableOpacity onPress={() => handleDeleteItem(item.id)} style={styles.deleteButton}>
             <Text style={styles.deleteButtonText}>×</Text>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -130,149 +112,111 @@ export const EditSetlistScreen = () => {
       <View style={styles.addSongContainer}>
         <TextInput
           style={styles.input}
-          placeholder="曲名を入力"
-          value={newSongName}
-          onChangeText={setNewSongName}
-          onSubmitEditing={handleAddSong}
+          placeholder="曲名 または 区切り名（リハ, Encoreなど）"
+          value={inputText}
+          onChangeText={setInputText}
         />
-        <Button title="追加" onPress={handleAddSong} />
+        <View style={styles.buttonGroup}>
+          <Button title="曲を追加" onPress={() => handleAddItem('song')} />
+          <View style={{ width: 10 }} />
+          <Button title="区切りを追加" onPress={() => handleAddItem('header')} color="#555" />
+        </View>
       </View>
 
       <DraggableFlatList
-        data={songs}
+        data={items}
         renderItem={renderItem}
         keyExtractor={(item) => `draggable-item-${item.id}`}
-        onDragEnd={({ data }) => setSongs(data)}
+        onDragEnd={({ data }) => setItems(data)}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>下のフォームから曲を追加してください</Text>
+            <Text style={styles.emptyText}>下のフォームから曲や区切りを追加してください</Text>
           </View>
         }
       />
-
-      {/* 編集用 */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isEditModalVisible}
-        onRequestClose={closeEditModal}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalView}>
-            <Text style={styles.modalTitle}>曲名を編集</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={editedSongName}
-              onChangeText={setEditedSongName}
-              autoFocus={true}
-            />
-            <View style={styles.modalButtonContainer}>
-              <Button title="キャンセル" onPress={closeEditModal} color="#888" />
-              <Button title="更新" onPress={handleUpdateSongName} />
-            </View>
-          </View>
-        </View>
-      </Modal>
-
     </View>
   );
 };
 
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  addSongContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  songItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff'
-  },
-  songInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  trackNumber: { 
-    fontSize: 16, 
-    color: '#888', 
-    marginRight: 16,
-    width: 30,
-  },
-  songName: { 
-    fontSize: 18,
-    flex: 1,
-  },
-  deleteButton: {
-    padding: 10,
-    marginLeft: 10,
-  },
-  deleteButtonText: {
-    fontSize: 22,
-    color: '#ff3b30',
-    fontWeight: 'bold',
-  },
-  emptyContainer: { padding: 40, alignItems: 'center' },
-  emptyText: { color: '#888' },
-
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+    container: { flex: 1, backgroundColor: '#fff' },
+    addSongContainer: {
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+      backgroundColor: '#f9f9f9',
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: '80%',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  modalInput: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-  },
+    input: {
+      borderWidth: 1,
+      borderColor: '#ccc',
+      backgroundColor: '#fff',
+      padding: 10,
+      borderRadius: 8,
+      marginBottom: 10,
+    },
+    buttonGroup: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    songItem: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+      backgroundColor: '#fff'
+    },
+    headerItem: {
+      paddingVertical: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#f0f0f0',
+    },
+    headerText: {
+      paddingHorizontal: 10,
+      fontWeight: 'bold',
+      color: '#555',
+      fontSize: 16,
+    },
+    headerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: '#ddd',
+    },
+    songInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    trackNumber: { 
+      fontSize: 16, 
+      color: '#888', 
+      marginRight: 16,
+      width: 30,
+    },
+    songName: { 
+      fontSize: 18,
+      flex: 1,
+    },
+    deleteButton: {
+      padding: 10,
+      marginLeft: 10,
+    },
+    deleteButtonAbsolute: {
+      position: 'absolute',
+      right: 10,
+      top: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      padding: 10,
+    },
+    deleteButtonText: {
+      fontSize: 22,
+      color: '#aaa',
+      fontWeight: '300',
+    },
+    emptyContainer: { padding: 40, alignItems: 'center' },
+    emptyText: { color: '#888' },
 });

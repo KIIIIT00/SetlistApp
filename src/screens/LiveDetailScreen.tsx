@@ -48,12 +48,25 @@ export const LiveDetailScreen = ({ route, navigation }: LiveDetailScreenProps) =
     );
   }
 
-  const renderSetlistItem = ({ item }: { item: Setlist }) => (
-    <View style={styles.setlistItem}>
-      <Text style={styles.trackNumber}>{item.trackNumber}.</Text>
-      <Text style={styles.songName}>{item.songName}</Text>
-    </View>
-  );
+  const renderSetlistItem = ({ item }: { item: Setlist }) => {
+    // item.typeによって表示を切り替え
+    if (item.type === 'header'){
+      return (
+        <View style={styles.headerItem}>
+          <View style={styles.headerLine} />
+          <Text style={styles.headerText}>{item.songName.toUpperCase()}</Text>
+          <View style={styles.headerLine} />
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.setlistItem}>
+        <Text style={styles.trackNumber}>{item.trackNumber}.</Text>
+        <Text style={styles.songName}>{item.songName}</Text>
+      </View>
+    );
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -86,7 +99,6 @@ export const LiveDetailScreen = ({ route, navigation }: LiveDetailScreenProps) =
   );
 };
 
-// ... (stylesは変更ありません)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -128,18 +140,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 8,
-    marginBottom: 8,
+  },
+  headerItem: {
+    paddingVertical: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  headerText: {
+    paddingHorizontal: 10,
+    fontWeight: 'bold',
+    color: '#555',
+    fontSize: 16,
+  },
+  headerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ddd',
   },
   trackNumber: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#888',
     marginRight: 12,
-    width: 30, // 曲順の表示幅を揃える
+    width: 30,
   },
   songName: {
     fontSize: 16,
-    flex: 1, // 曲名が長くても改行されるように
+    flex: 1,
   },
   emptyText: {
     textAlign: 'center',
