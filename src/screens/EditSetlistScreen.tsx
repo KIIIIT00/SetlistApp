@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useLayoutEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import Toast from 'react-native-toast-message';
 import { getSetlistsForLive, Setlist, updateSetlistForLive } from '../database/db';
 import { RootStackParamList } from '../../App';
@@ -10,7 +10,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 type EditSetlistScreenRouteProp = RouteProp<RootStackParamList, 'EditSetlist'>;
 type EditSetlistScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'EditSetlist'>;
 
-// --- ▼ 修正点1: 新しい曲の一時IDを許容するため、idの型を拡張 ▼ ---
 type Song = Omit<Setlist, 'id' | 'liveId'> & { id?: number | string };
 
 export const EditSetlistScreen = () => {
@@ -39,8 +38,6 @@ export const EditSetlistScreen = () => {
 
   const handleAddSong = () => {
     if (!newSongName.trim()) return;
-    
-  
     const newSong: Song = {
       id: `new_${Date.now()}`,
       songName: newSongName.trim(),
@@ -48,7 +45,13 @@ export const EditSetlistScreen = () => {
     };
     setSongs([...songs, newSong]);
     setNewSongName('');
-    Keyboard.dismiss(); // 追加後にキーボードを閉じるUX改善
+    Keyboard.dismiss();
+  };
+
+  const handleDeleteSong = (songIdToDelete: number | string) => {
+    setSongs((currentSongs) =>
+      currentSongs.filter((song) => song.id !== songIdToDelete)
+    );
   };
 
   const handleSave = async () => {
@@ -68,17 +71,26 @@ export const EditSetlistScreen = () => {
   };
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Song>) => {
-    // 曲順はstateのインデックスを元に表示する
-    const currentIndex = songs.findIndex(song => song.id === item.id);
+    const currentIndex = songs.findIndex((song) => song.id === item.id);
     return (
-      <TouchableOpacity
-        onLongPress={drag}
-        disabled={isActive}
-        style={[styles.songItem, { backgroundColor: isActive ? '#f0f0f0' : '#fff' }]}
-      >
-        <Text style={styles.trackNumber}>{currentIndex + 1}.</Text>
-        <Text style={styles.songName}>{item.songName}</Text>
-      </TouchableOpacity>
+      <ScaleDecorator>
+        <TouchableOpacity
+          onLongPress={drag}
+          disabled={isActive}
+          style={[styles.songItem, { backgroundColor: isActive ? '#f0f0f0' : '#fff' }]}
+        >
+          <View style={styles.songInfo}>
+            <Text style={styles.trackNumber}>{currentIndex + 1}.</Text>
+            <Text style={styles.songName}>{item.songName}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => handleDeleteSong(item.id!)}
+            style={styles.deleteButton}
+          >
+            <Text style={styles.deleteButtonText}>×</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </ScaleDecorator>
     );
   };
 
@@ -110,40 +122,58 @@ export const EditSetlistScreen = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f5f5f5' },
-    addSongContainer: {
-      flexDirection: 'row',
-      padding: 16,
-      alignItems: 'center',
-      borderBottomWidth: 1,
-      borderBottomColor: '#eee',
-      backgroundColor: '#fff',
-    },
-    input: {
-      flex: 1,
-      borderWidth: 1,
-      borderColor: '#ccc',
-      padding: 10,
-      borderRadius: 8,
-      marginRight: 10,
-    },
-    songItem: {
-      padding: 20,
-      flexDirection: 'row',
-      alignItems: 'center',
-      borderBottomWidth: 1,
-      borderBottomColor: '#eee',
-      backgroundColor: '#fff'
-    },
-    trackNumber: { 
-      fontSize: 16, 
-      color: '#888', 
-      marginRight: 16,
-      width: 30, // 曲順の表示幅を揃える
-    },
-    songName: { fontSize: 18 },
-    emptyContainer: { padding: 40, alignItems: 'center' },
-    emptyText: { color: '#888' },
-  });
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  addSongContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  songItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff'
+  },
+  songInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  trackNumber: { 
+    fontSize: 16, 
+    color: '#888', 
+    marginRight: 16,
+    width: 30,
+  },
+  songName: { 
+    fontSize: 18,
+    flex: 1, // 曲名が長くても改行されるように
+  },
+  deleteButton: {
+    padding: 10,
+    marginLeft: 10,
+  },
+  deleteButtonText: {
+    fontSize: 22,
+    color: '#ff3b30',
+    fontWeight: 'bold',
+  },
+  emptyContainer: { padding: 40, alignItems: 'center' },
+  emptyText: { color: '#888' },
+});
