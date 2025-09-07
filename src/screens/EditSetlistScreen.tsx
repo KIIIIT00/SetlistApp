@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Keyboard, Modal } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import Toast from 'react-native-toast-message';
@@ -19,6 +19,10 @@ export const EditSetlistScreen = () => {
 
   const [songs, setSongs] = useState<Song[]>([]);
   const [newSongName, setNewSongName] = useState('');
+
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [currentlyEditingSong, setCurrentlyEditingSong] = useState<Song | null>(null);
+  const [editedSongName, setEditedSongName] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -59,7 +63,6 @@ export const EditSetlistScreen = () => {
       ...song,
       trackNumber: index + 1,
     }));
-
     try {
       await updateSetlistForLive(liveId, updatedSetlist);
       Toast.show({ type: 'success', text1: 'セットリストを更新しました' });
@@ -70,11 +73,39 @@ export const EditSetlistScreen = () => {
     }
   };
 
+  const openEditModal = (song: Song) => {
+    setCurrentlyEditingSong(song);
+    setEditedSongName(song.songName);
+    setIsEditModalVisible(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalVisible(false);
+    setCurrentlyEditingSong(null);
+    setEditedSongName('');
+  };
+
+  const handleUpdateSongName = () => {
+    if (!currentlyEditingSong || !editedSongName.trim()) return;
+    
+    setSongs(currentSongs => 
+      currentSongs.map(song => 
+        song.id === currentlyEditingSong.id 
+          ? { ...song, songName: editedSongName.trim() } 
+          : song
+      )
+    );
+    
+    closeEditModal();
+  };
+
+
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Song>) => {
     const currentIndex = songs.findIndex((song) => song.id === item.id);
     return (
       <ScaleDecorator>
         <TouchableOpacity
+          onPress={() => openEditModal(item)}
           onLongPress={drag}
           disabled={isActive}
           style={[styles.songItem, { backgroundColor: isActive ? '#f0f0f0' : '#fff' }]}
@@ -118,9 +149,35 @@ export const EditSetlistScreen = () => {
           </View>
         }
       />
+
+      {/* 編集用 */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isEditModalVisible}
+        onRequestClose={closeEditModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>曲名を編集</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editedSongName}
+              onChangeText={setEditedSongName}
+              autoFocus={true}
+            />
+            <View style={styles.modalButtonContainer}>
+              <Button title="キャンセル" onPress={closeEditModal} color="#888" />
+              <Button title="更新" onPress={handleUpdateSongName} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
@@ -163,7 +220,7 @@ const styles = StyleSheet.create({
   },
   songName: { 
     fontSize: 18,
-    flex: 1, // 曲名が長くても改行されるように
+    flex: 1,
   },
   deleteButton: {
     padding: 10,
@@ -176,4 +233,46 @@ const styles = StyleSheet.create({
   },
   emptyContainer: { padding: 40, alignItems: 'center' },
   emptyText: { color: '#888' },
+
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  modalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 20,
+    fontSize: 16,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
 });
