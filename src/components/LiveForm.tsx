@@ -13,6 +13,7 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
   const [liveName, setLiveName] = useState(initialData?.liveName || '');
   const [venueName, setVenueName] = useState(initialData?.venueName || '');
   const [artistName, setArtistName] = useState(initialData?.artistName || '');
+  const [tags, setTags] = useState(initialData?.tags || '');
   const [date, setDate] = useState(initialData?.liveDate ? new Date(initialData.liveDate) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -50,11 +51,12 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
           liveDate,
           venueName,
           artistName,
+          tags,
         });
         Toast.show({ type: 'success', text1: '更新しました' });
       } else {
         // 新規追加モードの場合：addLiveを呼び出す
-        await addLive({ liveName, liveDate, venueName, artistName });
+        await addLive({ liveName, liveDate, venueName, artistName, tags });
         Toast.show({ type: 'success', text1: '保存しました' });
       }
       onSave();
@@ -103,6 +105,14 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
         value={artistName}
         onChangeText={setArtistName}
         placeholder="例：Expo Band"
+      />
+
+      <Text style={styles.label}>タグ</Text>
+      <TextInput
+        style={styles.input}
+        value={tags}
+        onChangeText={setTags}
+        placeholder="例: フェス，対バン，遠征"
       />
 
       <Button

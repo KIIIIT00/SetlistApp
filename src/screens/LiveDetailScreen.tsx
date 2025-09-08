@@ -1,14 +1,17 @@
 import React, { useCallback, useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Button, ScrollView } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getLiveById, getSetlistsForLive, Live, Setlist } from '../database/db';
 import { RootStackParamList } from '../../App';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-// スクリーンが受け取るprops全体の型を定義
-type LiveDetailScreenProps = NativeStackScreenProps<RootStackParamList, 'LiveDetail'>;
+type LiveDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LiveDetail'>;
+type LiveDetailScreenRouteProp = RouteProp<RootStackParamList, 'LiveDetail'>;
 
-export const LiveDetailScreen = ({ route, navigation }: LiveDetailScreenProps) => {
+export const LiveDetailScreen = () => {
+  const navigation = useNavigation<LiveDetailScreenNavigationProp>();
+  const route = useRoute<LiveDetailScreenRouteProp>();
   const { liveId } = route.params;
 
   const [live, setLive] = useState<Live | null>(null);
@@ -49,8 +52,7 @@ export const LiveDetailScreen = ({ route, navigation }: LiveDetailScreenProps) =
   }
 
   const renderSetlistItem = ({ item }: { item: Setlist }) => {
-    // item.typeによって表示を切り替え
-    if (item.type === 'header'){
+    if (item.type === 'header') {
       return (
         <View style={styles.headerItem}>
           <View style={styles.headerLine} />
@@ -59,7 +61,7 @@ export const LiveDetailScreen = ({ route, navigation }: LiveDetailScreenProps) =
         </View>
       );
     }
-
+    
     return (
       <View style={styles.setlistItem}>
         <Text style={styles.trackNumber}>{item.trackNumber}.</Text>
@@ -72,8 +74,27 @@ export const LiveDetailScreen = ({ route, navigation }: LiveDetailScreenProps) =
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.liveName}>{live.liveName}</Text>
-        <Text style={styles.detailText}>{live.artistName}</Text>
-        <Text style={styles.detailText}>{live.venueName} / {live.liveDate}</Text>
+        <View style={styles.detailRow}>
+          <MaterialCommunityIcons name="account-music" size={18} color="#555" />
+          <Text style={styles.detailText}>{live.artistName}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Ionicons name="location-sharp" size={18} color="#555" />
+          <Text style={styles.detailText}>{live.venueName}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Ionicons name="calendar" size={18} color="#555" />
+          <Text style={styles.detailText}>{live.liveDate}</Text>
+        </View>
+        {live.tags && (
+            <View style={styles.tagsContainer}>
+              {live.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
+                <View key={tag} style={styles.tag}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
       </View>
 
       <View style={styles.setlistContainer}>
@@ -116,14 +137,40 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   liveName: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   detailText: {
     fontSize: 16,
-    color: '#555',
-    marginBottom: 4,
+    color: '#333',
+    marginLeft: 12,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 12,
+  },
+  tag: {
+    backgroundColor: '#eef2ff',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#4338ca',
+    fontWeight: '500',
   },
   setlistContainer: {
     marginTop: 16,

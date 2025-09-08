@@ -8,6 +8,7 @@ export interface Live {
   venueName?: string;
   artistName?: string;
   imagePath?: string;
+  tags?: string;
 }
 
 export interface Setlist {
@@ -33,7 +34,8 @@ export const initDatabase = async (): Promise<void> => {
       liveDate TEXT NOT NULL,
       venueName TEXT,
       artistName TEXT,
-      imagePath TEXT
+      imagePath TEXT,
+      tags TEXT
     );
 
     CREATE TABLE IF NOT EXISTS setlists (
@@ -61,16 +63,29 @@ export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunR
     live.liveDate,
     live.venueName || null,
     live.artistName || null,
-    live.imagePath || null
+    live.imagePath || null,
+    live.tags || null
   );
 };
 
 /**
- * 保存されているすべてのライブ情報を取得する
+ * 保存されているライブ情報を取得する（検索機能付き）
+ * @param searchQuery 検索キーワード
  * @returns Promise<Live[]>
  */
-export const getLives = async (): Promise<Live[]> => {
-  return await db.getAllAsync<Live>('SELECT * FROM lives ORDER BY liveDate DESC;');
+export const getLives = async (searchQuery?: string): Promise<Live[]> => {
+  let query = 'SELECT * FROM lives';
+  const params: string[] = [];
+
+  if (searchQuery) {
+    query += ' WHERE liveName LIKE ? OR artistName LIKE ? OR venueName LIKE ? OR tags LIKE ?';
+    const fuzzyQuery = `%${searchQuery}%`;
+    params.push(fuzzyQuery, fuzzyQuery, fuzzyQuery, fuzzyQuery);
+  }
+
+  query += ' ORDER BY liveDate DESC;';
+
+  return await db.getAllAsync<Live>(query, ...params);
 };
 
 /**
@@ -116,6 +131,7 @@ export const updateLive = async (live: Live): Promise<SQLite.SQLiteRunResult> =>
     live.venueName || null,
     live.artistName || null,
     live.imagePath || null,
+    live.tags || null,
     live.id
   );
 };

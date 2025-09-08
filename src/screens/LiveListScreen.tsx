@@ -1,27 +1,49 @@
-import React, { useCallback, useState, useLayoutEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, Alert } from 'react-native';
+import React, { useCallback, useState, useLayoutEffect, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Swipeable } from 'react-native-gesture-handler';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { getLives, Live, deleteLive } from '../database/db';
 import { RootStackParamList } from '../../App';
 
 export const LiveListScreen = () => {
   const [lives, setLives] = useState<Live[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const loadLives = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getLives(searchQuery);
+      setLives(data);
+    } catch (error) {
+      console.error("Failed to load lives:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadLives();
+    }, 300); // ユーザーの入力を待つために少し遅延させる
+
+    return () => clearTimeout(timer);
+  }, [loadLives]);
 
   useFocusEffect(
     useCallback(() => {
-      // 中でasync関数を定義して...
-      const loadLives = async () => {
-        const data = await getLives();
-        setLives(data);
-      };
-
       loadLives();
-    }, [])
+    }, [loadLives])
   );
+
+  const formatDateForList = (dataString: string) => {
+    const date = new Date(dataString);
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -68,21 +90,56 @@ export const LiveListScreen = () => {
         style={styles.itemContainer}
         onPress={() => navigation.navigate('LiveDetail', { liveId: item.id })}
       >
-        <View>
+        <View style={styles.infoContainer}>
           <Text style={styles.itemTitle}>{item.liveName}</Text>
-          <Text style={styles.itemSubtitle}>{item.artistName || 'アーティスト未登録'}</Text>
+          
+
+          <View style={styles.detailRow}>
+            <MaterialCommunityIcons name="account-music" size={16} color="#666" />
+            <Text style={styles.itemSubtitle}>{item.artistName || 'アーティスト未登録'}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="location-sharp" size={16} color="#666" />
+            <Text style={styles.itemDetail}>{item.venueName || '会場未登録'}</Text>
+          </View>
+           <View style={styles.detailRow}>
+            <Ionicons name="calendar" size={16} color="#666" />
+            <Text style={styles.itemDetail}>{formatDateForList(item.liveDate)}</Text>
+          </View>
+
+          {item.tags && (
+            <View style={styles.tagsContainer}>
+              {item.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
+                <View key={tag} style={styles.tag}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
-        <Text style={styles.itemDate}>{item.liveDate}</Text>
       </TouchableOpacity>
     </Swipeable>
   );
 
   return (
     <View style={styles.container}>
-      {lives.length === 0 ? (
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="ライブ名, アーティスト, タグ..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          clearButtonMode="while-editing"
+        />
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator style={{ marginTop: 20 }} />
+      ) : lives.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>まだライブが登録されていません。</Text>
-          <Text style={styles.emptySubText}>右上の「新規追加」から記録を始めましょう！</Text>
+          <Text style={styles.emptyText}>
+            {searchQuery ? '検索結果がありません' : 'まだライブが登録されていません。'}
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -96,11 +153,22 @@ export const LiveListScreen = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  searchContainer: {
+    padding: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  searchInput: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
   },
   itemContainer: {
     backgroundColor: '#fff',
@@ -110,14 +178,43 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  infoContainer: {
+    flex: 1
+  },
   itemTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+   detailRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 5 
   },
   itemSubtitle: {
     fontSize: 14,
     color: '#666',
     marginTop: 4,
+  },
+  itemDetail: {
+    fontSize: 12,
+    color: '#888',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8
+  },
+  tag: {
+    backgroundColor: '#eee',
+    borderRadius: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#555'
   },
   itemDate: {
     fontSize: 14,

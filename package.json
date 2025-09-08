@@ -24,7 +24,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-toast-message": "^2.3.3",
     "expo-file-system": "~18.1.11",
-    "expo-sharing": "~13.1.5"
+    "expo-sharing": "~13.1.5",
+    "@expo/vector-icons": "^14.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
