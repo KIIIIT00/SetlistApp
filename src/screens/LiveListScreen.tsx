@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useLayoutEffect, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, Alert, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -10,46 +10,42 @@ import { RootStackParamList } from '../../App';
 
 export const LiveListScreen = () => {
   const [lives, setLives] = useState<Live[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [artistFilter, setArtistFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
+  
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const loadLives = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await getLives(searchQuery);
+      // ▼ getLivesにすべてのフィルター条件を渡す ▼
+      const data = await getLives({ searchQuery, artistFilter, yearFilter });
       setLives(data);
     } catch (error) {
-      console.error("Failed to load lives:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchQuery]);
+        console.error("Failed to load lives:", error);
+    } 
+    finally { setIsLoading(false); }
+  }, [searchQuery, artistFilter, yearFilter]); // 依存配列にフィルターを追加
 
   useEffect(() => {
     const timer = setTimeout(() => {
       loadLives();
-    }, 300); // ユーザーの入力を待つために少し遅延させる
-
+    }, 300);
     return () => clearTimeout(timer);
-  }, [loadLives]);
+  }, [searchQuery, artistFilter, yearFilter, loadLives]);
 
   useFocusEffect(
     useCallback(() => {
       loadLives();
     }, [loadLives])
   );
-
-  const formatDateForList = (dataString: string) => {
-    const date = new Date(dataString);
-    return `${date.getMonth() + 1}月${date.getDate()}日`;
-  };
-
+  
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <Button onPress={() => navigation.navigate('Settings')} title="設定" />
-      ),
+      headerLeft: () => <Button onPress={() => navigation.navigate('Settings')} title="設定" />,
       headerRight: () => <Button onPress={() => navigation.navigate('AddLive', {})} title="新規追加" />,
     });
   }, [navigation]);
@@ -65,23 +61,22 @@ export const LiveListScreen = () => {
           style: "destructive",
           onPress: async () => {
             await deleteLive(liveId);
-            const data = await getLives();
-            setLives(data);
+            await loadLives();
           },
         },
       ]
     );
   };
+  
+  const renderRightActions = (liveId: number) => (
+    <TouchableOpacity onPress={() => handleDelete(liveId)} style={styles.deleteButton}>
+      <Text style={styles.deleteButtonText}>削除</Text>
+    </TouchableOpacity>
+  );
 
-  const renderRightActions = (liveId: number) => {
-    return (
-      <TouchableOpacity
-        onPress={() => handleDelete(liveId)}
-        style={styles.deleteButton}
-      >
-        <Text style={styles.deleteButtonText}>削除</Text>
-      </TouchableOpacity>
-    );
+  const formatDateForList = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   };
 
   const renderItem = ({ item }: { item: Live }) => (
@@ -92,8 +87,6 @@ export const LiveListScreen = () => {
       >
         <View style={styles.infoContainer}>
           <Text style={styles.itemTitle}>{item.liveName}</Text>
-          
-
           <View style={styles.detailRow}>
             <MaterialCommunityIcons name="account-music" size={16} color="#666" />
             <Text style={styles.itemSubtitle}>{item.artistName || 'アーティスト未登録'}</Text>
@@ -106,7 +99,6 @@ export const LiveListScreen = () => {
             <Ionicons name="calendar" size={16} color="#666" />
             <Text style={styles.itemDetail}>{formatDateForList(item.liveDate)}</Text>
           </View>
-
           {item.tags && (
             <View style={styles.tagsContainer}>
               {item.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
@@ -126,19 +118,36 @@ export const LiveListScreen = () => {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="ライブ名, アーティスト, タグ..."
+          placeholder="キーワードで検索..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           clearButtonMode="while-editing"
         />
+        <View style={styles.filterRow}>
+          <TextInput
+            style={[styles.searchInput, styles.filterInput]}
+            placeholder="アーティスト名で絞り込み"
+            value={artistFilter}
+            onChangeText={setArtistFilter}
+            clearButtonMode="while-editing"
+          />
+          <TextInput
+            style={[styles.searchInput, styles.filterInput, { flex: 0.5 }]} // 横幅を調整
+            placeholder="年 (例: 2025)"
+            value={yearFilter}
+            onChangeText={setYearFilter}
+            keyboardType="number-pad"
+            clearButtonMode="while-editing"
+          />
+        </View>
       </View>
 
-      {isLoading ? (
+      {isLoading && lives.length === 0 ? (
         <ActivityIndicator style={{ marginTop: 20 }} />
       ) : lives.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {searchQuery ? '検索結果がありません' : 'まだライブが登録されていません。'}
+            {searchQuery || artistFilter || yearFilter ? '検索・絞り込み結果がありません' : 'まだライブが登録されていません。'}
           </Text>
         </View>
       ) : (
@@ -154,102 +163,101 @@ export const LiveListScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f5f5f5' 
   },
-  searchContainer: {
-    padding: 10,
+  searchContainer: { 
+    padding: 10, 
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+     borderBottomWidth: 1, 
+     borderBottomColor: '#eee' 
   },
-  searchInput: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
+  searchInput: { 
+    backgroundColor: '#f0f0f0', 
+    borderRadius: 8, 
+    padding: 12, 
+    fontSize: 16 
   },
-  itemContainer: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+  filterRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    marginTop: 10,
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  infoContainer: {
-    flex: 1
+  filterInput: {
+    flex: 1,
+    marginRight: 10,
   },
-  itemTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  itemContainer: { 
+    backgroundColor: '#fff', 
+    padding: 16 
   },
-   detailRow: { 
+  infoContainer: { 
+    flex: 1 
+  },
+  itemTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    marginBottom: 8 
+  },
+  detailRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 5 
+    marginBottom: 6 
   },
-  itemSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+  itemSubtitle: { 
+    fontSize: 16, 
+    color: '#555', 
+    marginLeft: 8 
   },
-  itemDetail: {
-    fontSize: 12,
-    color: '#888',
+  itemDetail: { 
+    fontSize: 14, 
+    color: '#777', 
+    marginLeft: 8 
   },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8
+  tagsContainer: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    marginTop: 10 
   },
-  tag: {
-    backgroundColor: '#eee',
-    borderRadius: 10,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    marginRight: 6,
-    marginBottom: 6
+  tag: { 
+    backgroundColor: '#eef2ff',
+    borderRadius: 12, 
+    paddingVertical: 4, 
+    paddingHorizontal: 10, 
+    marginRight: 6, 
+    marginBottom: 6 
   },
-  tagText: {
-    fontSize: 12,
-    color: '#555'
+  tagText: { 
+    fontSize: 12, 
+    color: '#4338ca', 
+    fontWeight: '500' 
+  
   },
-  itemDate: {
-    fontSize: 14,
-    color: '#888',
+  separator: { 
+    height: 1, 
+    backgroundColor: '#eee' 
   },
-  separator: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginLeft: 16,
+  deleteButton: { 
+    backgroundColor: '#ff3b30', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    width: 100 
   },
-  deleteButton: {
-    backgroundColor: '#ff3b30',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 100,
+  deleteButtonText: { 
+    color: '#fff', 
+    fontWeight: 'bold' 
   },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  emptyContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    paddingHorizontal: 20 
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#888',
-    textAlign: 'center',
-  },
-  emptySubText: {
-    fontSize: 14,
-    color: '#aaa',
-    marginTop: 8,
-    textAlign: 'center',
+  emptyText: { 
+    fontSize: 18, 
+    color: '#888', 
+    textAlign: 'center' 
   },
 });

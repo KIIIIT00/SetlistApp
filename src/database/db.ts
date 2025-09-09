@@ -69,25 +69,46 @@ export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunR
 };
 
 /**
- * 保存されているライブ情報を取得する（検索機能付き）
- * @param searchQuery 検索キーワード
+ * 保存されているライブ情報を取得する（検索・フィルター機能付き）
+ * @param options 検索とフィルターのオプション
  * @returns Promise<Live[]>
  */
-export const getLives = async (searchQuery?: string): Promise<Live[]> => {
+export const getLives = async (options: {
+  searchQuery?: string;
+  artistFilter?: string;
+  yearFilter?: string;
+}): Promise<Live[]> => {
   let query = 'SELECT * FROM lives';
+  const conditions: string[] = [];
   const params: string[] = [];
 
-  if (searchQuery) {
-    query += ' WHERE liveName LIKE ? OR artistName LIKE ? OR venueName LIKE ? OR tags LIKE ?';
-    const fuzzyQuery = `%${searchQuery}%`;
+  // 検索クエリによる絞り込み
+  if (options.searchQuery && options.searchQuery.trim() !== '') {
+    conditions.push('(liveName LIKE ? OR artistName LIKE ? OR venueName LIKE ? OR tags LIKE ?)');
+    const fuzzyQuery = `%${options.searchQuery.trim()}%`;
     params.push(fuzzyQuery, fuzzyQuery, fuzzyQuery, fuzzyQuery);
   }
 
-  query += ' ORDER BY liveDate DESC;';
+  // アーティスト名による絞り込み
+  if (options.artistFilter && options.artistFilter.trim() !== '') {
+    conditions.push('artistName = ?');
+    params.push(options.artistFilter.trim());
+  }
+  
+  // 年による絞り込み
+  if (options.yearFilter && options.yearFilter.trim() !== '') {
+    conditions.push("strftime('%Y', liveDate) = ?");
+    params.push(options.yearFilter.trim());
+  }
 
+  if (conditions.length > 0) {
+    query += ' WHERE ' + conditions.join(' AND ');
+  }
+
+  query += ' ORDER BY liveDate DESC;';
+  
   return await db.getAllAsync<Live>(query, ...params);
 };
-
 /**
  * IDを指定して単一のライブ情報を取得する
  * @param id 取得するライブのID
