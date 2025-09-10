@@ -58,7 +58,7 @@ export const initDatabase = async (): Promise<void> => {
  */
 export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunResult> => {
   return await db.runAsync(
-    'INSERT INTO lives (liveName, liveDate, venueName, artistName, imagePath) VALUES (?, ?, ?, ?, ?);',
+    'INSERT INTO lives (liveName, liveDate, venueName, artistName, imagePath, tags) VALUES (?, ?, ?, ?, ?, ?);',
     live.liveName,
     live.liveDate,
     live.venueName || null,
@@ -67,7 +67,6 @@ export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunR
     live.tags || null
   );
 };
-
 /**
  * 保存されているライブ情報を取得する（検索・フィルター機能付き）
  * @param options 検索とフィルターのオプション
@@ -146,7 +145,7 @@ export const deleteLive = async (id: number): Promise<SQLite.SQLiteRunResult> =>
  */
 export const updateLive = async (live: Live): Promise<SQLite.SQLiteRunResult> => {
   return db.runAsync(
-    'UPDATE lives SET liveName = ?, liveDate = ?, venueName = ?, artistName = ?, imagePath = ? WHERE id = ?;',
+    'UPDATE lives SET liveName = ?, liveDate = ?, venueName = ?, artistName = ?, imagePath = ?, tags = ? WHERE id = ?;',
     live.liveName,
     live.liveDate,
     live.venueName || null,
