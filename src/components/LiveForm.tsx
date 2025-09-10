@@ -69,9 +69,9 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
   useEffect(() => {
     if (initialData?.liveDate) {
       const [y, m, d] = initialData.liveDate.split('-');
-      setYear(y);
-      setMonth(m);
-      setDay(d);
+      setYear(y || '');
+      setMonth(m ? String(parseInt(m, 10)) : '');
+      setDay(d ? String(parseInt(d, 10)) : '');
     }
   }, [initialData]);
 
@@ -84,9 +84,39 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
     loadSuggestions();
   }, []);
 
+  /**
+   * 日付の妥当性をチェックする
+   * @param y 年
+   * @param m 月
+   * @param d 日
+   * @returns 妥当な日付であればtrue
+   */
+  const isValidDate = (y: string, m: string, d: string): boolean => {
+    const yearNum = parseInt(y, 10);
+    const monthNum = parseInt(m, 10);
+    const dayNum = parseInt(d, 10);
+
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum) || y.length !== 4) {
+      return false;
+    }
+
+    if (monthNum < 1 || monthNum > 12) {
+      return false;
+    }
+
+    const date = new Date(yearNum, monthNum - 1, dayNum);
+
+    // 指定した日付と生成された日付が一致するかチェック
+    return (
+      date.getFullYear() === yearNum &&
+      date.getMonth() === monthNum - 1 &&
+      date.getDate() === dayNum
+    );
+  };
+
   const handleSaveLive = async () => {
-    if (!year || !month || !day || year.length !== 4 || month.length > 2 || day.length > 2) {
-      Alert.alert('入力エラー', '日付を正しく入力してください。');
+    if (!isValidDate(year, month, day)) {
+      Alert.alert('入力エラー', '日付を正しく入力してください。\n例: 2025 / 09 / 10');
       return;
     }
     const liveDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
@@ -110,6 +140,19 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
     }
   };
 
+  /**
+   * 入力値を数字のみに制限するハンドラ
+   */
+  const handleNumericInputChange = (
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    value: string
+  ) => {
+    // 数字以外の入力を弾く
+    if (/^\d*$/.test(value)) {
+      setter(value);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>ライブ名 *</Text>
@@ -126,7 +169,7 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
           style={styles.dateInput}
           value={year}
           onChangeText={(text) => {
-            setYear(text);
+            handleNumericInputChange(setYear, text);
             if (text.length === 4) {
               monthInputRef.current?.focus();
             }
@@ -142,7 +185,7 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
           style={styles.dateInput}
           value={month}
           onChangeText={(text) => {
-            setMonth(text);
+            handleNumericInputChange(setMonth, text);
             if (text.length === 2) {
               dayInputRef.current?.focus();
             }
@@ -157,7 +200,7 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
           ref={dayInputRef}
           style={styles.dateInput}
           value={day}
-          onChangeText={setDay}
+          onChangeText={(text) => handleNumericInputChange(setDay, text)}
           placeholder="DD"
           keyboardType="number-pad"
           maxLength={2}
