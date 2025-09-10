@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Keyboard, ScrollView } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import Toast from 'react-native-toast-message';
-import { getSetlistsForLive, Setlist, updateSetlistForLive } from '../database/db';
+import { getSetlistsForLive, Setlist, updateSetlistForLive, getSongsByArtist } from '../database/db';
 import { RootStackParamList } from '../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -15,19 +15,25 @@ type SongOrHeader = Omit<Setlist, 'id' | 'liveId'> & { id: number | string };
 export const EditSetlistScreen = () => {
   const navigation = useNavigation<EditSetlistScreenNavigationProp>();
   const route = useRoute<EditSetlistScreenRouteProp>();
-  const { liveId } = route.params;
+  const { liveId, artistName } = route.params;
 
   const [items, setItems] = useState<SongOrHeader[]>([]);
   const [inputText, setInputText] = useState('');
-
+  const [songSuggestions, setSongSuggestions] = useState<string[]>([]);
+  const [allSongsForArtist, setAllSongsForArtist] = useState<string[]>([]);
+  
   useFocusEffect(
     useCallback(() => {
-      const loadSetlist = async () => {
-        const data = await getSetlistsForLive(liveId);
-        setItems(data);
+      const loadData = async () => {
+        const setlistData = await getSetlistsForLive(liveId);
+        setItems(setlistData);
+        if (artistName) {
+          const songs = await getSongsByArtist(artistName);
+          setAllSongsForArtist(songs);
+        }
       };
-      loadSetlist();
-    }, [liveId])
+      loadData();
+    }, [liveId, artistName])
   );
 
   useLayoutEffect(() => {
@@ -36,16 +42,31 @@ export const EditSetlistScreen = () => {
     });
   }, [navigation, items]);
 
-  const handleAddItem = (type: 'song' | 'header') => {
-    if (!inputText.trim()) return;
+  const handleInputChange = (text: string) => {
+    setInputText(text);
+    if (text && artistName) {
+      const suggestions = allSongsForArtist.filter(song => 
+        song.toLowerCase().includes(text.toLowerCase()) && 
+        !items.some(item => item.songName === song)
+      );
+      setSongSuggestions(suggestions);
+    } else {
+      setSongSuggestions([]);
+    }
+  };
+  
+  const handleAddItem = (type: 'song' | 'header', suggestion?: string) => {
+    const name = suggestion || inputText.trim();
+    if (!name) return;
     const newItem: SongOrHeader = {
       id: `new_${Date.now()}`,
-      songName: inputText.trim(),
+      songName: name,
       trackNumber: items.length + 1,
       type: type,
     };
     setItems([...items, newItem]);
     setInputText('');
+    setSongSuggestions([]);
     Keyboard.dismiss();
   };
 
@@ -56,7 +77,10 @@ export const EditSetlistScreen = () => {
   };
 
   const handleSave = async () => {
-    const updatedItems = items.map((item, index) => ({ ...item, trackNumber: index + 1 }));
+    const updatedItems = items.map((item, index) => ({
+      ...item,
+      trackNumber: index + 1,
+    }));
     try {
       await updateSetlistForLive(liveId, updatedItems);
       Toast.show({ type: 'success', text1: 'セットリストを更新しました' });
@@ -112,10 +136,19 @@ export const EditSetlistScreen = () => {
       <View style={styles.addSongContainer}>
         <TextInput
           style={styles.input}
-          placeholder="曲名 または 区切り名（リハ, Encoreなど）"
+          placeholder="曲名 または 区切り名"
           value={inputText}
-          onChangeText={setInputText}
+          onChangeText={handleInputChange}
         />
+        {songSuggestions.length > 0 && (
+          <ScrollView style={styles.suggestionList} keyboardShouldPersistTaps="handled">
+            {songSuggestions.map(song => (
+              <TouchableOpacity key={song} style={styles.suggestionItem} onPress={() => handleAddItem('song', song)}>
+                <Text>{song}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
         <View style={styles.buttonGroup}>
           <Button title="曲を追加" onPress={() => handleAddItem('song')} />
           <View style={{ width: 10 }} />
@@ -145,6 +178,7 @@ const styles = StyleSheet.create({
       borderBottomWidth: 1,
       borderBottomColor: '#eee',
       backgroundColor: '#f9f9f9',
+      zIndex: 1,
     },
     input: {
       borderWidth: 1,
@@ -153,6 +187,19 @@ const styles = StyleSheet.create({
       padding: 10,
       borderRadius: 8,
       marginBottom: 10,
+    },
+    suggestionList: {
+      maxHeight: 150,
+      backgroundColor: '#fff',
+      borderWidth: 1,
+      borderColor: '#ddd',
+      borderRadius: 8,
+      marginBottom: 10,
+    },
+    suggestionItem: {
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
     },
     buttonGroup: {
       flexDirection: 'row',
@@ -217,6 +264,11 @@ const styles = StyleSheet.create({
       color: '#aaa',
       fontWeight: '300',
     },
-    emptyContainer: { padding: 40, alignItems: 'center' },
-    emptyText: { color: '#888' },
-});
+    emptyContainer: { 
+      padding: 40, 
+      alignItems: 'center' 
+    },
+    emptyText: { 
+      color: '#888' 
+    },
+  });

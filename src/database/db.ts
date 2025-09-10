@@ -210,3 +210,49 @@ export const getAllDataForExport = async () => {
     setlists,
   };
 };
+
+/**
+ * 登録されているすべてのユニークな会場名を取得する
+ */
+export const getDistinctVenues = async (): Promise<string[]> => {
+  const result = await db.getAllAsync<{ venueName: string}>('SELECT DISTINCT venueName FROM lives WHERE venueName IS NOT NULL AND venueName != "";');
+  return result.map(item => item.venueName);
+};
+
+/**
+ * 登録されているすべてのユニークなアーティスト名を取得する
+ */
+export const getDistinctArtists = async (): Promise<string[]> => {
+  const result = await db.getAllAsync<{ artistName: string }>('SELECT DISTINCT artistName FROM lives WHERE artistName IS NOT NULL AND artistName != "";');
+  return result.map(item => item.artistName);
+};
+
+/**
+ * 登録されているすべてのユニークなタグを取得する
+ */
+export const getDistinctTags = async (): Promise<string[]> => {
+  const result = await db.getAllAsync<{ tags: string }>('SELECT tags FROM lives WHERE tags IS NOT NULL AND tags != "";');
+  const allTags = new Set<string>();
+  result.forEach(row => {
+    row.tags.split(',').forEach(tag => {
+      const trimmed = tag.trim();
+      if (trimmed) allTags.add(trimmed);
+    });
+  });
+  return Array.from(allTags);
+};
+
+/**
+ * 指定したアーティストの過去の曲名をすべて取得する
+ * @param artistName アーティスト名
+ */
+export const getSongsByArtist = async (artistName: string): Promise<string[]> => {
+  const result = await db.getAllAsync<{ songName: string }>(
+    `SELECT DISTINCT T2.songName 
+     FROM lives AS T1 
+     INNER JOIN setlists AS T2 ON T1.id = T2.liveId 
+     WHERE T1.artistName = ? AND T2.type = 'song';`,
+    artistName 
+  );
+  return result.map(item => item.songName);
+};

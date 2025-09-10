@@ -1,61 +1,105 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity, Platform } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { addLive, updateLive, Live } from '../database/db';
+import { addLive, updateLive, Live, getDistinctArtists, getDistinctVenues, getDistinctTags } from '../database/db';
 
-type LiveFormProps = {
-  onSave: () => void;
-  initialData?: Live;
+type AutoCompleteInputProps = {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  suggestions: string[];
+  onSuggestionPress: (suggestion: string) => void;
 };
+
+const AutoCompleteInput = ({ label, value, onChangeText, placeholder, suggestions, onSuggestionPress }: AutoCompleteInputProps) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  return (
+    <View style={styles.inputWrapper}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        onFocus={() => setShowSuggestions(true)}
+        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+      />
+      {showSuggestions && suggestions.length > 0 && (
+        <ScrollView
+          style={styles.suggestionList}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
+        >
+          {suggestions.map(item => (
+            <TouchableOpacity key={item} style={styles.suggestionItem} onPress={() => onSuggestionPress(item)}>
+              <Text style={styles.suggestionText}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
+};
+
+
+type LiveFormProps = { onSave: () => void; initialData?: Live; };
 
 export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
   const [liveName, setLiveName] = useState(initialData?.liveName || '');
   const [venueName, setVenueName] = useState(initialData?.venueName || '');
   const [artistName, setArtistName] = useState(initialData?.artistName || '');
   const [tags, setTags] = useState(initialData?.tags || '');
-  const [date, setDate] = useState(initialData?.liveDate ? new Date(initialData.liveDate) : new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const onChangeDate = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setDate(selectedDate);
+  const [year, setYear] = useState('');
+  const [month, setMonth] = useState('');
+  const [day, setDay] = useState('');
+
+  const monthInputRef = useRef<TextInput>(null);
+  const dayInputRef = useRef<TextInput>(null);
+
+  const [artistSuggestions, setArtistSuggestions] = useState<string[]>([]);
+  const [venueSuggestions, setVenueSuggestions] = useState<string[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [allArtists, setAllArtists] = useState<string[]>([]);
+  const [allVenues, setAllVenues] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
+
+
+  useEffect(() => {
+    if (initialData?.liveDate) {
+      const [y, m, d] = initialData.liveDate.split('-');
+      setYear(y);
+      setMonth(m);
+      setDay(d);
     }
-  };
+  }, [initialData]);
 
-  const showDatepicker = () => setShowDatePicker(true);
-  
-  const formatDateForDisplay = (d: Date): string => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
-
-  const formatDateForDatabase = (d: Date): string => {
-    const year = d.getFullYear();
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const day = d.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      setAllArtists(await getDistinctArtists());
+      setAllVenues(await getDistinctVenues());
+      setAllTags(await getDistinctTags());
+    };
+    loadSuggestions();
+  }, []);
 
   const handleSaveLive = async () => {
-    const liveDate = formatDateForDatabase(date);
+    if (!year || !month || !day || year.length !== 4 || month.length > 2 || day.length > 2) {
+      Alert.alert('入力エラー', '日付を正しく入力してください。');
+      return;
+    }
+    const liveDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    
     if (!liveName.trim()) {
       Alert.alert('入力エラー', 'ライブ名は必須です。');
       return;
     }
-
     try {
       if (initialData) {
-        // 編集モードの場合：updateLiveを呼び出す
-        await updateLive({
-          ...initialData,
-          liveName,
-          liveDate,
-          venueName,
-          artistName,
-          tags,
-        });
+        await updateLive({ ...initialData, liveName, liveDate, venueName, artistName, tags });
         Toast.show({ type: 'success', text1: '更新しました' });
       } else {
-        // 新規追加モードの場合：addLiveを呼び出す
         await addLive({ liveName, liveDate, venueName, artistName, tags });
         Toast.show({ type: 'success', text1: '保存しました' });
       }
@@ -77,61 +121,109 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
       />
       
       <Text style={styles.label}>日付 *</Text>
-      <TouchableOpacity onPress={showDatepicker} style={styles.datePickerButton}>
-        <Text style={styles.datePickerButtonText}>{formatDateForDisplay(date)}</Text>
-      </TouchableOpacity>
-      
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={onChangeDate}
-          locale="ja-JP"
+      <View style={styles.dateInputContainer}>
+        <TextInput
+          style={styles.dateInput}
+          value={year}
+          onChangeText={(text) => {
+            setYear(text);
+            if (text.length === 4) {
+              monthInputRef.current?.focus();
+            }
+          }}
+          placeholder="YYYY"
+          keyboardType="number-pad"
+          maxLength={4}
         />
-      )}
+        <Text style={styles.dateSeparator}>年</Text>
 
-      <Text style={styles.label}>会場名</Text>
-      <TextInput
-        style={styles.input}
-        value={venueName}
-        onChangeText={setVenueName}
-        placeholder="例：東京ドーム"
-      />
+        <TextInput
+          ref={monthInputRef}
+          style={styles.dateInput}
+          value={month}
+          onChangeText={(text) => {
+            setMonth(text);
+            if (text.length === 2) {
+              dayInputRef.current?.focus();
+            }
+          }}
+          placeholder="MM"
+          keyboardType="number-pad"
+          maxLength={2}
+        />
+        <Text style={styles.dateSeparator}>月</Text>
 
-      <Text style={styles.label}>アーティスト名</Text>
-      <TextInput
-        style={styles.input}
+        <TextInput
+          ref={dayInputRef}
+          style={styles.dateInput}
+          value={day}
+          onChangeText={setDay}
+          placeholder="DD"
+          keyboardType="number-pad"
+          maxLength={2}
+        />
+        <Text style={styles.dateSeparator}>日</Text>
+      </View>
+      
+      <AutoCompleteInput
+        label="アーティスト名"
         value={artistName}
-        onChangeText={setArtistName}
-        placeholder="例：Expo Band"
+        onChangeText={(text) => {
+          setArtistName(text);
+          setArtistSuggestions(text ? allArtists.filter(name => name.toLowerCase().includes(text.toLowerCase())) : []);
+        }}
+        suggestions={artistSuggestions}
+        onSuggestionPress={(suggestion) => {
+          setArtistName(suggestion);
+          setArtistSuggestions([]);
+        }}
       />
-
-      <Text style={styles.label}>タグ</Text>
-      <TextInput
-        style={styles.input}
+      <AutoCompleteInput
+        label="会場名"
+        value={venueName}
+        onChangeText={(text) => {
+          setVenueName(text);
+          setVenueSuggestions(text ? allVenues.filter(name => name.toLowerCase().includes(text.toLowerCase())) : []);
+        }}
+        suggestions={venueSuggestions}
+        onSuggestionPress={(suggestion) => {
+          setVenueName(suggestion);
+          setVenueSuggestions([]);
+        }}
+      />
+      <AutoCompleteInput
+        label="タグ"
         value={tags}
-        onChangeText={setTags}
-        placeholder="例: フェス，対バン，遠征"
+        placeholder="カンマ区切りで入力"
+        onChangeText={(text) => {
+          setTags(text);
+          const currentTag = text.split(',').pop()?.trim() || '';
+          setTagSuggestions(currentTag ? allTags.filter(tag => tag.toLowerCase().includes(currentTag.toLowerCase())) : []);
+        }}
+        suggestions={tagSuggestions}
+        onSuggestionPress={(suggestion) => {
+          const tagParts = tags.split(',').map(t => t.trim());
+          tagParts[tagParts.length - 1] = suggestion;
+          setTags(tagParts.join(', '));
+          setTagSuggestions([]);
+        }}
       />
 
-      <Button
-        title={initialData ? "更新する" : "ライブ情報を保存"}
-        onPress={handleSaveLive}
-      />
+      <Button title={initialData ? "更新する" : "ライブ情報を保存"} onPress={handleSaveLive} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
+  container: { padding: 16 },
+  inputWrapper: {
+    marginBottom: 20,
   },
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
+  label: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    marginBottom: 8, 
+    color: '#333' 
   },
   input: {
     borderWidth: 1,
@@ -140,20 +232,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,
-    marginBottom: 20,
     fontSize: 16,
   },
-  datePickerButton: {
+  dateInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  dateInput: {
     borderWidth: 1,
     borderColor: '#ccc',
     backgroundColor: '#fff',
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 10,
     borderRadius: 8,
-    marginBottom: 20,
-  },
-  datePickerButtonText: {
     fontSize: 16,
-    color: '#333',
+    textAlign: 'center',
+    flex: 1,
+  },
+  dateSeparator: {
+    fontSize: 16,
+    marginHorizontal: 10,
+  },
+  suggestionList: {
+    maxHeight: 150,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  suggestionText: {
+    fontSize: 16,
   },
 });

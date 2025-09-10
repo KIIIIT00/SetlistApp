@@ -21,7 +21,7 @@ export type RootStackParamList = {
   AddLive: { liveId?: number };
   LiveDetail: { liveId: number };
   AddSong: { liveId: number };
-  EditSetlist: { liveId: number };
+  EditSetlist: { liveId: number; artistName?: string; };
   Settings: undefined;
 };
 

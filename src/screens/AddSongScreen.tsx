@@ -34,6 +34,7 @@ export const AddSongScreen = () => {
         trackNumber: trackNum,
         songName: songName,
         memo: memo,
+        type: 'song',
       });
 
       Toast.show({

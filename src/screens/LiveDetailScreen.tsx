@@ -70,6 +70,16 @@ export const LiveDetailScreen = () => {
     );
   };
 
+  const ListFooter = () => (
+    <View style={styles.buttonContainer}>
+      <Button
+        title="セットリストを編集"
+        // ▼ artistNameを渡す ▼
+        onPress={() => navigation.navigate('EditSetlist', { liveId: live.id, artistName: live.artistName })}
+      />
+    </View>
+  );
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
