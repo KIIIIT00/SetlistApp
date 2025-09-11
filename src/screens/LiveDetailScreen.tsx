@@ -122,7 +122,7 @@ export const LiveDetailScreen = () => {
         <View style={styles.buttonContainer}>
           <Button
             title="セットリストを編集"
-            onPress={() => navigation.navigate('EditSetlist', { liveId: live.id })}
+            onPress={() => navigation.navigate('EditSetlist', { liveId: live.id, artistName: live.artistName })}
           />
         </View>
       </View>
