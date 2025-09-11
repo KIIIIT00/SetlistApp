@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { addLive, updateLive, Live, getDistinctArtists, getDistinctVenues, getDistinctTags } from '../database/db';
+import { Ionicons } from '@expo/vector-icons';
 
 type AutoCompleteInputProps = {
   label: string;
@@ -42,6 +43,22 @@ const AutoCompleteInput = ({ label, value, onChangeText, placeholder, suggestion
   );
 };
 
+const StarRating = ({ rating, onRate }: { rating: number; onRate: (rate: number) => void}) => {
+  return(
+    <View style={styles.starContainer}>
+      {[1, 2, 3, 4, 5].map((rate) => (
+        <TouchableOpacity key={rate} onPress={() => onRate(rate)}>
+          <Ionicons
+            name={rate <= rating ? 'star' : 'star-outline'}
+            size={32}
+            color = {rate <= rating ? '#ffb400' : '#ccc'}
+          />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+};
+
 
 type LiveFormProps = { onSave: () => void; initialData?: Live; };
 
@@ -64,6 +81,9 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
   const [allArtists, setAllArtists] = useState<string[]>([]);
   const [allVenues, setAllVenues] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
+
+  const [rating, setRating] = useState(initialData?.rating || 0);
+  const [memo, setMemo] = useState(initialData?.memo || '');
 
 
   useEffect(() => {
@@ -127,10 +147,10 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
     }
     try {
       if (initialData) {
-        await updateLive({ ...initialData, liveName, liveDate, venueName, artistName, tags });
+        await updateLive({ ...initialData, liveName, liveDate, venueName, artistName, tags, rating, memo });
         Toast.show({ type: 'success', text1: '更新しました' });
       } else {
-        await addLive({ liveName, liveDate, venueName, artistName, tags });
+        await addLive({ liveName, liveDate, venueName, artistName, tags, rating, memo });
         Toast.show({ type: 'success', text1: '保存しました' });
       }
       onSave();
@@ -252,6 +272,19 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
         }}
       />
 
+      <Text style={styles.label}>評価</Text>
+      <StarRating rating={rating} onRate={setRating}/>
+
+      <Text style={styles.label}>感想メモ</Text>
+      <TextInput
+        style={[styles.input, styles.memoInput]}
+        value={memo}
+        onChangeText={setMemo}
+        placeholder="ライブの感想などを記録できます"
+        multiline={true}
+        numberOfLines={4}
+      />
+
       <Button title={initialData ? "更新する" : "ライブ情報を保存"} onPress={handleSaveLive} />
     </View>
   );
@@ -313,4 +346,14 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 16,
   },
+  starContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
+  memoInput: {
+    height: 120,
+    textAlignVertical: 'top',
+  }
 });

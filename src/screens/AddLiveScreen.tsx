@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, View, ActivityIndicator } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LiveForm } from '../components/LiveForm';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { Live, getLiveById } from '../database/db';
+import { useHeaderHeight } from '@react-navigation/elements';
 
-// スクリーンが受け取るprops全体の型を定義
 type AddLiveScreenProps = NativeStackScreenProps<RootStackParamList, 'AddLive'>;
 
 export const AddLiveScreen = ({ route, navigation }: AddLiveScreenProps) => {
   const liveId = route.params?.liveId;
-
   const [initialData, setInitialData] = useState<Live | undefined>();
   const [isLoading, setIsLoading] = useState(true);
+
+  const headerHeight = useHeaderHeight();
 
   useEffect(() => {
     navigation.setOptions({
@@ -39,28 +39,33 @@ export const AddLiveScreen = ({ route, navigation }: AddLiveScreenProps) => {
   }
 
   return (
-    <KeyboardAwareScrollView
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
-      extraScrollHeight={30} 
-      enableOnAndroid={true}
-      keyboardShouldPersistTaps="handled"
+      keyboardVerticalOffset={headerHeight}
     >
-      <LiveForm
-        initialData={initialData}
-        onSave={() => navigation.goBack()}
-      />
-    </KeyboardAwareScrollView>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 30 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <LiveForm
+          initialData={initialData}
+          onSave={() => navigation.goBack()}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f5f5f5' 
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5'
   },
-  centered: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
 });

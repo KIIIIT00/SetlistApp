@@ -9,6 +9,8 @@ export interface Live {
   artistName?: string;
   imagePath?: string;
   tags?: string;
+  rating?: number;
+  memo?: string;
 }
 
 export interface Setlist {
@@ -35,7 +37,9 @@ export const initDatabase = async (): Promise<void> => {
       venueName TEXT,
       artistName TEXT,
       imagePath TEXT,
-      tags TEXT
+      tags TEXT,
+      rating INTEGER,
+      memo TEXT
     );
 
     CREATE TABLE IF NOT EXISTS setlists (
@@ -48,6 +52,13 @@ export const initDatabase = async (): Promise<void> => {
       FOREIGN KEY (liveId) REFERENCES lives (id) ON DELETE CASCADE
     );
   `);
+  try {
+    await db.execAsync('ALTER TABLE lives ADD COLUMN rating INTEGER;');
+    await db.execAsync('ALTER TABLE lives ADD COLUMN memo TEXT;');
+    console.log('Columns "rating" and "memo" added.');
+  } catch (e){
+    console.log('Columns already exist, skipping');
+  }
   console.log('Database initialized successfully.');
 };
 
@@ -64,7 +75,9 @@ export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunR
     live.venueName || null,
     live.artistName || null,
     live.imagePath || null,
-    live.tags || null
+    live.tags || null,
+    live.rating || null,
+    live.memo || null
   );
 };
 /**
@@ -152,6 +165,8 @@ export const updateLive = async (live: Live): Promise<SQLite.SQLiteRunResult> =>
     live.artistName || null,
     live.imagePath || null,
     live.tags || null,
+    live.rating || null,
+    live.memo || null,
     live.id
   );
 };
