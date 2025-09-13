@@ -22,7 +22,7 @@ export interface Setlist {
   type: 'song' | 'header';
 }
 
-const db = SQLite.openDatabaseSync('setlist.db');
+const db = SQLite.openDatabaseSync('setlist_v2.db');
 
 // --- データベース初期化関数 ---
 export const initDatabase = async (): Promise<void> => {
@@ -60,6 +60,11 @@ export const initDatabase = async (): Promise<void> => {
     console.log('Columns already exist, skipping');
   }
   console.log('Database initialized successfully.');
+
+  console.log("--- 現在の'lives'テーブルの構造を確認 ---");
+  const schema = await db.getAllAsync<{ name: string, type: string }>(`PRAGMA table_info(lives);`);
+  console.log(schema.map(col => `${col.name} (${col.type})`).join(', '));
+  console.log("------------------------------------");
 };
 
 /**
@@ -69,7 +74,7 @@ export const initDatabase = async (): Promise<void> => {
  */
 export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunResult> => {
   return await db.runAsync(
-    'INSERT INTO lives (liveName, liveDate, venueName, artistName, imagePath, tags) VALUES (?, ?, ?, ?, ?, ?);',
+    'INSERT INTO lives (liveName, liveDate, venueName, artistName, imagePath, tags, rating, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
     live.liveName,
     live.liveDate,
     live.venueName || null,
@@ -90,7 +95,7 @@ export const getLives = async (options: {
   artistFilter?: string;
   yearFilter?: string;
 }): Promise<Live[]> => {
-  let query = 'SELECT * FROM lives';
+  let query = 'SELECT id, liveName, liveDate, venueName, artistName, imagePath, tags, rating, memo FROM lives';
   const conditions: string[] = [];
   const params: string[] = [];
 
@@ -118,8 +123,16 @@ export const getLives = async (options: {
   }
 
   query += ' ORDER BY liveDate DESC;';
+
+  const lives = await db.getAllAsync<Live>(query, ...params);
   
-  return await db.getAllAsync<Live>(query, ...params);
+  if (lives.length > 0) {
+    console.log("--- getLives: データベースから取得した最初のライブデータ ---");
+    console.log(lives[0]);
+    console.log("--------------------------------------------------");
+  }
+  
+  return lives;
 };
 /**
  * IDを指定して単一のライブ情報を取得する
@@ -157,8 +170,11 @@ export const deleteLive = async (id: number): Promise<SQLite.SQLiteRunResult> =>
  * @returns Promise<SQLite.SQLiteRunResult>
  */
 export const updateLive = async (live: Live): Promise<SQLite.SQLiteRunResult> => {
+  console.log("--- updateLive: 更新するデータ ---");
+  console.log(live);
+  console.log("-------------------------------");
   return db.runAsync(
-    'UPDATE lives SET liveName = ?, liveDate = ?, venueName = ?, artistName = ?, imagePath = ?, tags = ? WHERE id = ?;',
+    'UPDATE lives SET liveName = ?, liveDate = ?, venueName = ?, artistName = ?, imagePath = ?, tags = ?, rating = ?, memo = ? WHERE id = ?;',
     live.liveName,
     live.liveDate,
     live.venueName || null,
