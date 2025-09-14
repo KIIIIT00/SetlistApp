@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getLiveById, getSetlistsForLive, Live, Setlist } from '../database/db';
 import { RootStackParamList } from '../../App';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { StarDisplay } from '../components/StarDisplay';
 
 type LiveDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LiveDetail'>;
 type LiveDetailScreenRouteProp = RouteProp<RootStackParamList, 'LiveDetail'>;
@@ -96,6 +97,9 @@ export const LiveDetailScreen = () => {
           <Ionicons name="calendar" size={18} color="#555" />
           <Text style={styles.detailText}>{live.liveDate}</Text>
         </View>
+        <View style={styles.detailRow}>
+          <StarDisplay rating={live.rating} size={18} />
+        </View>
         {live.tags && (
             <View style={styles.tagsContainer}>
               {live.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
@@ -106,6 +110,14 @@ export const LiveDetailScreen = () => {
             </View>
           )}
       </View>
+      {live.memo && (
+        <View style={styles.memoContainer}>
+          <Button
+            title="感想メモを見る"
+            onPress={() => navigation.navigate('MemoDetail', { liveId: live.id })}
+          />
+        </View>
+      )}
 
       <View style={styles.setlistContainer}>
         <Text style={styles.sectionTitle}>セットリスト</Text>
@@ -181,6 +193,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#4338ca',
     fontWeight: '500',
+  },
+  memoContainer: {
+    marginTop: 16,
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   setlistContainer: {
     marginTop: 16,

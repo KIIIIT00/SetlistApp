@@ -4,9 +4,9 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-
 import { getLives, Live, deleteLive } from '../database/db';
 import { RootStackParamList } from '../../App';
+import { StarDisplay } from '../components/StarDisplay';
 
 export const LiveListScreen = () => {
   const [lives, setLives] = useState<Live[]>([]);
@@ -18,24 +18,23 @@ export const LiveListScreen = () => {
   
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  // データ読み込み関数
   const loadLives = useCallback(async () => {
-    setIsLoading(true);
     try {
-      // ▼ getLivesにすべてのフィルター条件を渡す ▼
+      setIsLoading(true);
       const data = await getLives({ searchQuery, artistFilter, yearFilter });
       setLives(data);
+      
+      if (data.length > 0) {
+        console.log("LiveListScreen: データベースから取得したデータ:", data[0]);
+      }
+
     } catch (error) {
         console.error("Failed to load lives:", error);
-    } 
-    finally { setIsLoading(false); }
-  }, [searchQuery, artistFilter, yearFilter]); // 依存配列にフィルターを追加
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadLives();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, artistFilter, yearFilter, loadLives]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchQuery, artistFilter, yearFilter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -99,6 +98,9 @@ export const LiveListScreen = () => {
             <Ionicons name="calendar" size={16} color="#666" />
             <Text style={styles.itemDetail}>{formatDateForList(item.liveDate)}</Text>
           </View>
+          <View style={{ marginBottom: 4 }}>
+            <StarDisplay rating={item.rating} />
+          </View>
           {item.tags && (
             <View style={styles.tagsContainer}>
               {item.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
@@ -132,7 +134,7 @@ export const LiveListScreen = () => {
             clearButtonMode="while-editing"
           />
           <TextInput
-            style={[styles.searchInput, styles.filterInput, { flex: 0.5 }]} // 横幅を調整
+            style={[styles.searchInput, styles.filterInput, { flex: 0.5 }]}
             placeholder="年 (例: 2025)"
             value={yearFilter}
             onChangeText={setYearFilter}
@@ -142,7 +144,7 @@ export const LiveListScreen = () => {
         </View>
       </View>
 
-      {isLoading && lives.length === 0 ? (
+      {isLoading ? (
         <ActivityIndicator style={{ marginTop: 20 }} />
       ) : lives.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -163,6 +165,11 @@ export const LiveListScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  starContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   container: { 
     flex: 1, 
     backgroundColor: '#f5f5f5' 
@@ -199,12 +206,11 @@ const styles = StyleSheet.create({
   itemTitle: { 
     fontSize: 20, 
     fontWeight: 'bold', 
-    marginBottom: 8 
   },
   detailRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 6 
+    marginTop: 6,
   },
   itemSubtitle: { 
     fontSize: 16, 

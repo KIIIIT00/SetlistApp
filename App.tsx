@@ -15,6 +15,7 @@ import { LiveDetailScreen } from './src/screens/LiveDetailScreen';
 import { AddSongScreen } from './src/screens/AddSongScreen';
 import { EditSetlistScreen } from './src/screens/EditSetlistScreen';
 import { SettingsScreen} from './src/screens/SettingsScreen';
+import { MemoDetailScreen } from './src/screens/MemoDetailScreen';
 
 export type RootStackParamList = {
   LiveList: undefined;
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   AddSong: { liveId: number };
   EditSetlist: { liveId: number; artistName?: string; };
   Settings: undefined;
+  MemoDetail: {liveId: number};
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -82,6 +84,11 @@ export default function App() {
             name="Settings"
             component={SettingsScreen}
             options={{ title: '設定'}}
+          />
+          <Stack.Screen
+            name="MemoDetail"
+            component={MemoDetailScreen}
+            options={{ title: '感想メモ'}}
           />
         </Stack.Navigator>
       </NavigationContainer>
