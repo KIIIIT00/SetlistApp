@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { addLive, updateLive, Live, getDistinctArtists, getDistinctVenues, getDistinctTags } from '../database/db';
-import { Ionicons } from '@expo/vector-icons';
+import { StarRating } from './StarRating';
 
 type AutoCompleteInputProps = {
   label: string;
@@ -42,23 +42,6 @@ const AutoCompleteInput = ({ label, value, onChangeText, placeholder, suggestion
     </View>
   );
 };
-
-const StarRating = ({ rating, onRate }: { rating: number; onRate: (rate: number) => void}) => {
-  return(
-    <View style={styles.starContainer}>
-      {[1, 2, 3, 4, 5].map((rate) => (
-        <TouchableOpacity key={rate} onPress={() => onRate(rate)}>
-          <Ionicons
-            name={rate <= rating ? 'star' : 'star-outline'}
-            size={32}
-            color = {rate <= rating ? '#ffb400' : '#ccc'}
-          />
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-};
-
 
 type LiveFormProps = { onSave: () => void; initialData?: Live; };
 
@@ -273,7 +256,7 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
       />
 
       <Text style={styles.label}>評価</Text>
-      <StarRating rating={rating} onRate={setRating}/>
+      <StarRating rating={rating} onRate={setRating} size={32}/>
 
       <Text style={styles.label}>感想メモ</Text>
       <TextInput

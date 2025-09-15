@@ -6,7 +6,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getLives, Live, deleteLive } from '../database/db';
 import { RootStackParamList } from '../../App';
-import { StarDisplay } from '../components/StarDisplay';
+import { StarRating } from '../components/StarRating';
 
 export const LiveListScreen = () => {
   const [lives, setLives] = useState<Live[]>([]);
@@ -18,7 +18,6 @@ export const LiveListScreen = () => {
   
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  // データ読み込み関数
   const loadLives = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -99,7 +98,7 @@ export const LiveListScreen = () => {
             <Text style={styles.itemDetail}>{formatDateForList(item.liveDate)}</Text>
           </View>
           <View style={{ marginBottom: 4 }}>
-            <StarDisplay rating={item.rating} />
+            <StarRating rating={item.rating} />
           </View>
           {item.tags && (
             <View style={styles.tagsContainer}>

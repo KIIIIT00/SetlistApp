@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getLiveById, getSetlistsForLive, Live, Setlist } from '../database/db';
 import { RootStackParamList } from '../../App';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { StarDisplay } from '../components/StarDisplay';
+import { StarRating } from '../components/StarRating';
 
 type LiveDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LiveDetail'>;
 type LiveDetailScreenRouteProp = RouteProp<RootStackParamList, 'LiveDetail'>;
@@ -98,7 +98,7 @@ export const LiveDetailScreen = () => {
           <Text style={styles.detailText}>{live.liveDate}</Text>
         </View>
         <View style={styles.detailRow}>
-          <StarDisplay rating={live.rating} size={18} />
+          <StarRating rating={live.rating} size={18} />
         </View>
         {live.tags && (
             <View style={styles.tagsContainer}>
