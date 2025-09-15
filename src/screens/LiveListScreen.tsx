@@ -43,7 +43,19 @@ export const LiveListScreen = () => {
   
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => <Button onPress={() => navigation.navigate('Settings')} title="設定" />,
+      headerLeft: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Stats')} 
+            style={{ marginRight: 20 }}
+          >
+            <Ionicons name="bar-chart-outline" size={24} color="#007aff" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+            <Ionicons name="settings-outline" size={24} color="#007aff" />
+          </TouchableOpacity>
+        </View>
+      ),
       headerRight: () => <Button onPress={() => navigation.navigate('AddLive', {})} title="新規追加" />,
     });
   }, [navigation]);

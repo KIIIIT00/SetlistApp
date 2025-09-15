@@ -286,3 +286,142 @@ export const getSongsByArtist = async (artistName: string): Promise<string[]> =>
   );
   return result.map(item => item.songName);
 };
+
+// 統計・分析機能用の関数
+/**
+ * @typedef {object} RankingItem
+ * @description ランキングの各項目を表す型
+ * @property {string} name - 項目名（アーティスト名，会場名，曲名など）
+ * @property {number} count - 公演数
+ */
+export type RankingItem = {
+  name: string;
+  count: number;
+};
+
+/**
+ * @function getArtistRankings
+ * @description アーティスト別のライブ参加回数ランキングを取得する
+ * @param {number} [limit=5] - 上位何件まで取得するか（任意）
+ * @returns {Promise<RankingItem[]>} ランキングデータの配列
+ */
+export const getArtistRankings = async (limit: number = 5): Promise<RankingItem[]> => {
+  const query = `
+    SELECT artistName as name, COUNT(id) as count
+    FROM lives
+    WHERE artistName IS NOT NULL AND artistName != ''
+    GROUP BY artistName
+    ORDER BY count DESC
+    LIMIT ?;
+  `;
+  return await db.getAllAsync<RankingItem>(query, limit);
+};
+
+/**
+ * @function getVenueRankings
+ * @description 会場別のライブ参加回数ランキングを取得する．
+ * @param {number} [limit=5] - 上位何件まで取得するか（任意）
+ * @returns {Promise<RankingItem[]>} ランキングデータの配列
+ */
+export const getVenueRankings = async (limit: number = 5): Promise<RankingItem[]> => {
+  const query = `
+    SELECT venueName as name, COUNT(id) as count
+    FROM lives
+    WHERE venueName IS NOT NULL AND venueName != ''
+    GROUP BY venueName
+    ORDER BY count DESC
+    LIMIT ?;
+  `;
+  return await db.getAllAsync<RankingItem>(query, limit);
+};
+
+/**
+ * @function getSongRankings
+ * @description 全ライブを通して，最も多く演奏された曲のランキングを取得する．
+ * @param {number} [limit=10] - 上位何件まで取得するか（任意）
+ * @returns {Promise<RankingItem[]>} ランキングデータの配列
+ */
+export const getSongRankings = async (limit: number = 10): Promise<RankingItem[]> => {
+  const query = `
+    SELECT songName as name, COUNT(id) as count
+    FROM setlists
+    WHERE type = 'song'
+    GROUP BY songName
+    ORDER BY count DESC
+    LIMIT ?;
+  `;
+  return await db.getAllAsync<RankingItem>(query, limit);
+};
+
+/**
+ * @function getSongRankingsByArtist
+ * @description 特定のアーティストに絞って、最も多く演奏された曲のランキングを取得する。
+ * @param {string} artistName - 対象のアーティスト名
+ * @param {number} [limit=10] - 上位何件まで取得するか (任意)
+ * @returns {Promise<RankingItem[]>} ランキングデータの配列
+ */
+export const getSongRankingsByArtist = async (artistName: string, limit: number = 10): Promise<RankingItem[]> => {
+  if (!artistName) return [];
+  const query = `
+    SELECT s.songName as name, COUNT(s.id) as count
+    FROM setlists s
+    JOIN lives l ON s.liveId = l.id
+    WHERE l.artistName = ? AND s.type = 'song'
+    GROUP BY s.songName
+    ORDER BY count DESC
+    LIMIT ?;
+  `;
+  return await db.getAllAsync<RankingItem>(query, artistName, limit);
+};
+
+/**
+ * @typedef {object} StatsSummary
+ * @description あなたのライブ記録のサマリー
+ * @property {number} totalLives - 通算ライブ参加数
+ * @property {number} averageRating - 評価の平均値 (小数点第一位まで)
+ */
+export type StatsSummary = {
+  totalLives: number;
+  averageRating: number;
+};
+
+/**
+ * @function getStatsSummary
+ * @description ライブ参加数や平均評価などのサマリー情報を取得する。
+ * @returns {Promise<StatsSummary>}
+ */
+export const getStatsSummary = async (): Promise<StatsSummary> => {
+    const result = await db.getFirstAsync<{ total: number, avg_rating: number }>(
+        `SELECT COUNT(id) as total, AVG(rating) as avg_rating FROM lives WHERE rating > 0;`
+    );
+    return {
+        totalLives: result?.total || 0,
+        averageRating: parseFloat(result?.avg_rating?.toFixed(1) || '0.0')
+    };
+};
+
+/**
+ * @typedef {object} YearlyActivity
+ * @description 年別のライブ参加記録
+ * @property {string} year - 年
+ * @property {number} count - その年の参加回数
+ */
+export type YearlyActivity = {
+    year: string;
+    count: number;
+};
+
+/**
+ * @function getYearlyActivity
+ * @description 年別のライブ参加数を取得する。
+ * @returns {Promise<YearlyActivity[]>}
+ */
+export const getYearlyActivity = async (): Promise<YearlyActivity[]> => {
+    const query = `
+        SELECT strftime('%Y', liveDate) as year, COUNT(id) as count
+        FROM lives
+        GROUP BY year
+        ORDER BY year DESC;
+    `;
+    return await db.getAllAsync<YearlyActivity>(query);
+};
