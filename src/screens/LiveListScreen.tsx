@@ -46,13 +46,19 @@ export const LiveListScreen = () => {
       headerLeft: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity 
-            onPress={() => navigation.navigate('Stats')} 
+            onPress={() => navigation.navigate('Settings')} 
+            style={{ marginRight: 20 }}
+          >
+            <Ionicons name="settings-outline"  size={24} color="#007aff" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Stats')}
             style={{ marginRight: 20 }}
           >
             <Ionicons name="bar-chart-outline" size={24} color="#007aff" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-            <Ionicons name="settings-outline" size={24} color="#007aff" />
+          <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
+            <Ionicons name="calendar-outline" size={24} color="#007aff" />
           </TouchableOpacity>
         </View>
       ),

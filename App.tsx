@@ -12,11 +12,11 @@ import { initDatabase } from './src/database/db';
 import { LiveListScreen } from './src/screens/LiveListScreen';
 import { AddLiveScreen } from './src/screens/AddLiveScreen';
 import { LiveDetailScreen } from './src/screens/LiveDetailScreen';
-import { AddSongScreen } from './src/screens/AddSongScreen';
 import { EditSetlistScreen } from './src/screens/EditSetlistScreen';
 import { SettingsScreen} from './src/screens/SettingsScreen';
 import { MemoDetailScreen } from './src/screens/MemoDetailScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
+import { CalendarScreen } from './src/screens/CalendarScreen';
 
 export type RootStackParamList = {
   LiveList: undefined;
@@ -27,6 +27,7 @@ export type RootStackParamList = {
   Settings: undefined;
   MemoDetail: {liveId: number};
   Stats: undefined;
+  Calendar: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -96,6 +97,11 @@ export default function App() {
             name="Stats"
             component={StatsScreen}
             options={{ title: '統計・分析' }}
+          />
+          <Stack.Screen
+            name="Calendar"
+            component={CalendarScreen}
+            options={{ title: 'カレンダー' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

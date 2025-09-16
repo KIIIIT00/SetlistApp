@@ -30,23 +30,23 @@ export const SettingsScreen = () => {
         });
     };
 
-    const handleExport = async () => {
-        try {
-            const data = await getAllDataForExport();
-            const jsonString = JSON.stringify(data, null, 2);
-            const fileUri = FileSystem.cacheDirectory + 'setlist_backup.json';
-            await FileSystem.writeAsStringAsync(fileUri, jsonString);
+    // const handleExport = async () => {
+    //     try {
+    //         const data = await getAllDataForExport();
+    //         const jsonString = JSON.stringify(data, null, 2);
+    //         const fileUri = FileSystem.cacheDirectory + 'setlist_backup.json';
+    //         await FileSystem.writeAsStringAsync(fileUri, jsonString);
 
-            if (!(await Sharing.isAvailableAsync())) {
-                Alert.alert('エラー', 'このデバイスでは共有機能を利用できません。');
-                return;
-            }
-            await Sharing.shareAsync(fileUri);
-        } catch (error) {
-            console.error(error);
-            Alert.alert('エクスポート失敗', 'データのエクスポート中にエラーが発生しました。');
-        }
-    };
+    //         if (!(await Sharing.isAvailableAsync())) {
+    //             Alert.alert('エラー', 'このデバイスでは共有機能を利用できません。');
+    //             return;
+    //         }
+    //         await Sharing.shareAsync(fileUri);
+    //     } catch (error) {
+    //         console.error(error);
+    //         Alert.alert('エクスポート失敗', 'データのエクスポート中にエラーが発生しました。');
+    //     }
+    // };
 
     return (
         <View style={styles.container}>
@@ -75,10 +75,10 @@ export const SettingsScreen = () => {
                 </View>
             </View>
 
-            <View style={styles.settingItem}>
+            {/* <View style={styles.settingItem}>
                 <Text style={styles.label}>データ管理</Text>
                 <Button title="全データをエクスポート" onPress={handleExport} />
-            </View>
+            </View> */}
         </View>
     );
 };
