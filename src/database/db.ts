@@ -287,6 +287,69 @@ export const getSongsByArtist = async (artistName: string): Promise<string[]> =>
   return result.map(item => item.songName);
 };
 
+/**
+ * 指定されたIDのライブとセットリストを複製（コピー）する
+ * @param originalLiveId 複製元のライブID
+ * @returns 新しく作成されたライブのID
+ */
+export const duplicateLiveById = async (originalLiveId: number): Promise<number | null> => {
+  try {
+    const originalLive = await db.getFirstAsync<Live>(
+      'SELECT * FROM lives WHERE id = ?;',
+      originalLiveId
+    );
+
+    if (!originalLive) {
+      console.error("複製元のライブが見つかりません。");
+      return null;
+    }
+
+    const newLiveDate = new Date().toISOString().split('T')[0]; // 今日の日付
+    const result = await db.runAsync(
+      'INSERT INTO lives (artistName, liveName, venueName, liveDate, memo, rating, imagePath, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+      [
+        originalLive.artistName || null,
+        originalLive.liveName,
+        originalLive.venueName || null,
+        newLiveDate,
+        '',        
+        0,          
+        null,      
+        originalLive.tags || null,
+      ]
+    );
+    const newLiveId = result.lastInsertRowId;
+
+    const originalSetlist = await db.getAllAsync<Setlist>(
+      'SELECT * FROM setlists WHERE liveId = ? ORDER BY trackNumber ASC;',
+      originalLiveId
+    );
+
+    if (originalSetlist.length > 0) {
+      const valuesPlaceholder = originalSetlist.map(() => '(?, ?, ?, ?, ?)').join(', ');
+      const params = originalSetlist.flatMap(song => [
+        newLiveId,
+        song.trackNumber,
+        song.songName,
+        song.memo || null,
+        song.type
+      ]);
+      
+      await db.runAsync(
+        `INSERT INTO setlists (liveId, trackNumber, songName, memo, type) VALUES ${valuesPlaceholder};`,
+        params
+      );
+    }
+
+    console.log(`ライブID:${originalLiveId} を複製し、新しいライブID:${newLiveId} を作成しました。`);
+    return newLiveId;
+
+  } catch (e) {
+    console.error("ライブの複製に失敗しました。", e);
+    return null;
+  }
+};
+
 // 統計・分析機能用の関数
 /**
  * @typedef {object} RankingItem
