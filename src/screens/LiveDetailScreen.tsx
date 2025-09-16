@@ -1,13 +1,15 @@
-import React, { useCallback, useState, useLayoutEffect } from 'react';
+import React, { useCallback, useState, useLayoutEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, Button, ScrollView } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Alert, Share } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import ViewShot from 'react-native-view-shot';
 import { getLiveById, getSetlistsForLive, Live, Setlist, duplicateLiveById, deleteLive } from '../database/db';
 import { RootStackParamList } from '../../App';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StarRating } from '../components/StarRating';
-import { Alert } from 'react-native';
 import { HeaderMenu } from '../components/HeaderMenu';
+import { ShareableImage } from '../components/ShareableImage';
 
 type LiveDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LiveDetail'>;
 type LiveDetailScreenRouteProp = RouteProp<RootStackParamList, 'LiveDetail'>;
@@ -19,6 +21,8 @@ export const LiveDetailScreen = () => {
 
   const [live, setLive] = useState<Live | null>(null);
   const [setlist, setSetlist] = useState<Setlist[]>([]);
+
+  const imageRef = useRef<ViewShot>(null);
 
   const handleCopyLive = async () => {
     Alert.alert(
@@ -63,6 +67,52 @@ export const LiveDetailScreen = () => {
     );
   };
 
+  const shareAsText = () => {
+    if (!live || !setlist ) return;
+
+    const setlistText = setlist.map(item =>
+      item.type === 'header' ? `\n- ${item.songName} -` : `${item.trackNumber}. ${item.songName}`
+    ).join('\n');
+
+    let message = `[Live Setlist]\n${live.liveName}\n\n■ Artist: ${live.artistName}\n■ Date: ${live.liveDate}\n■ Venue: ${live.venueName}\n\n- Setlist -\n${setlistText}`;
+
+    if (live.tags) {
+      const tagText = live.tags.split(',').map(t => `#${t.trim()}`).join(' ');
+      message += `\n\n- Tags -\n${tagText}`;
+    }
+
+    if (live.memo) {
+      message += `\n\n- Memo -\n${live.memo}`;
+    }
+
+    message += `\n\nvia SetlistApp`;
+    Share.share({ message });
+  };
+
+  const shareAsImage = async () => {
+    try {
+      if (imageRef.current?.capture) {
+        const uri = await imageRef.current.capture();
+        await Share.share({ url: uri, title: 'セットリスト' });
+      }
+    } catch (error) {
+      console.error("画像の共有に失敗しました。", error);
+      Alert.alert("エラー", "画像の共有に失敗しました。");
+    }
+  };
+
+  const handleShare = () => {
+    Alert.alert(
+      "共有方法を選択",
+      "どの形式でセットリストを共有しますか？",
+      [
+        { text: "テキストとして共有", onPress: shareAsText },
+        { text: "画像として共有", onPress: shareAsImage },
+        { text: "キャンセル", style: "cancel" },
+      ]
+    );
+  };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: live ? live.liveName : 'ライブ詳細',
@@ -76,6 +126,10 @@ export const LiveDetailScreen = () => {
             {
               text: 'コピーして新規作成',
               onPress: handleCopyLive,
+            },
+            {
+              text: '共有する',
+              onPress: handleShare,
             },
             {
               text: 'このライブを削除',
@@ -128,6 +182,13 @@ export const LiveDetailScreen = () => {
   };
 
   return (
+    <>
+    <View style={{ position: 'absolute', top: -10000, left: 0, right: 0, alignItems: 'center' }}>
+        <ViewShot ref={imageRef} options={{ fileName: "setlist", format: "jpg", quality: 0.9 }}>
+          <ShareableImage live={live} setlist={setlist} />
+        </ViewShot>
+      </View>
+
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.liveName}>{live.liveName}</Text>
@@ -185,6 +246,7 @@ export const LiveDetailScreen = () => {
         </View>
       </View>
     </ScrollView>
+    </>
   );
 };
 
