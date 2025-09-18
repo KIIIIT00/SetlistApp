@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useLayoutEffect, useEffect } from 'react';
+import React, { useCallback, useState, useLayoutEffect, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getLives, Live, deleteLive } from '../database/db';
 import { RootStackParamList } from '../../App';
 import { StarRating } from '../components/StarRating';
+import { useTheme } from '../context/ThemeContext';
+import { tokens, AppTheme } from '../theme';
 
 export const LiveListScreen = () => {
   const [lives, setLives] = useState<Live[]>([]);
@@ -17,6 +19,9 @@ export const LiveListScreen = () => {
   const [yearFilter, setYearFilter] = useState('');
   
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const loadLives = useCallback(async () => {
     try {
@@ -49,22 +54,22 @@ export const LiveListScreen = () => {
             onPress={() => navigation.navigate('Settings')} 
             style={{ marginRight: 20 }}
           >
-            <Ionicons name="settings-outline"  size={24} color="#007aff" />
+            <Ionicons name="settings-outline"  size={24} color={theme.primary} />
           </TouchableOpacity>
           <TouchableOpacity 
             onPress={() => navigation.navigate('Stats')}
             style={{ marginRight: 20 }}
           >
-            <Ionicons name="bar-chart-outline" size={24} color="#007aff" />
+            <Ionicons name="bar-chart-outline" size={24} color={theme.primary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
-            <Ionicons name="calendar-outline" size={24} color="#007aff" />
+            <Ionicons name="calendar-outline" size={24} color={theme.primary} />
           </TouchableOpacity>
         </View>
       ),
       headerRight: () => <Button onPress={() => navigation.navigate('AddLive', {})} title="新規追加" />,
     });
-  }, [navigation]);
+  }, [navigation, theme]);
 
   const handleDelete = (liveId: number) => {
     Alert.alert(
@@ -104,15 +109,15 @@ export const LiveListScreen = () => {
         <View style={styles.infoContainer}>
           <Text style={styles.itemTitle}>{item.liveName}</Text>
           <View style={styles.detailRow}>
-            <MaterialCommunityIcons name="account-music" size={16} color="#666" />
+            <MaterialCommunityIcons name="account-music" size={16} color={theme.icon} />
             <Text style={styles.itemSubtitle}>{item.artistName || 'アーティスト未登録'}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="location-sharp" size={16} color="#666" />
+            <Ionicons name="location-sharp" size={16} color={theme.icon} />
             <Text style={styles.itemDetail}>{item.venueName || '会場未登録'}</Text>
           </View>
            <View style={styles.detailRow}>
-            <Ionicons name="calendar" size={16} color="#666" />
+            <Ionicons name="calendar" size={16} color={theme.icon} />
             <Text style={styles.itemDetail}>{formatDateForList(item.liveDate)}</Text>
           </View>
           <View style={{ marginBottom: 4 }}>
@@ -141,6 +146,7 @@ export const LiveListScreen = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
           clearButtonMode="while-editing"
+          placeholderTextColor={theme.subtext}
         />
         <View style={styles.filterRow}>
           <TextInput
@@ -149,6 +155,7 @@ export const LiveListScreen = () => {
             value={artistFilter}
             onChangeText={setArtistFilter}
             clearButtonMode="while-editing"
+            placeholderTextColor={theme.subtext}
           />
           <TextInput
             style={[styles.searchInput, styles.filterInput, { flex: 0.5 }]}
@@ -157,6 +164,7 @@ export const LiveListScreen = () => {
             onChangeText={setYearFilter}
             keyboardType="number-pad"
             clearButtonMode="while-editing"
+            placeholderTextColor={theme.subtext}
           />
         </View>
       </View>
@@ -181,106 +189,100 @@ export const LiveListScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  starContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f5f5f5' 
-  },
-  searchContainer: { 
-    padding: 10, 
-    backgroundColor: '#fff',
-     borderBottomWidth: 1, 
-     borderBottomColor: '#eee' 
-  },
-  searchInput: { 
-    backgroundColor: '#f0f0f0', 
-    borderRadius: 8, 
-    padding: 12, 
-    fontSize: 16 
-  },
-  filterRow: {
-    flexDirection: 'row',
-    marginTop: 10,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  filterInput: {
-    flex: 1,
-    marginRight: 10,
-  },
-  itemContainer: { 
-    backgroundColor: '#fff', 
-    padding: 16 
-  },
-  infoContainer: { 
-    flex: 1 
-  },
-  itemTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-  },
-  detailRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginTop: 6,
-  },
-  itemSubtitle: { 
-    fontSize: 16, 
-    color: '#555', 
-    marginLeft: 8 
-  },
-  itemDetail: { 
-    fontSize: 14, 
-    color: '#777', 
-    marginLeft: 8 
-  },
-  tagsContainer: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    marginTop: 10 
-  },
-  tag: { 
-    backgroundColor: '#eef2ff',
-    borderRadius: 12, 
-    paddingVertical: 4, 
-    paddingHorizontal: 10, 
-    marginRight: 6, 
-    marginBottom: 6 
-  },
-  tagText: { 
-    fontSize: 12, 
-    color: '#4338ca', 
-    fontWeight: '500' 
-  
-  },
-  separator: { 
-    height: 1, 
-    backgroundColor: '#eee' 
-  },
-  deleteButton: { 
-    backgroundColor: '#ff3b30', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    width: 100 
-  },
-  deleteButtonText: { 
-    color: '#fff', 
-    fontWeight: 'bold' 
-  },
-  emptyContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingHorizontal: 20 
-  },
-  emptyText: { 
-    fontSize: 18, 
-    color: '#888', 
-    textAlign: 'center' 
-  },
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+    container: { 
+        flex: 1, 
+        backgroundColor: theme.background 
+    },
+    searchContainer: { 
+        padding: tokens.spacing.m, 
+        backgroundColor: theme.card,
+        borderBottomWidth: 1, 
+        borderBottomColor: theme.separator 
+    },
+    searchInput: { 
+        backgroundColor: theme.inputBackground, 
+        borderRadius: 8, 
+        padding: tokens.spacing.l, 
+        fontSize: 16,
+        color: theme.text,
+    },
+    filterRow: {
+        flexDirection: 'row',
+        marginTop: tokens.spacing.m,
+        alignItems: 'center',
+    },
+    filterInput: {
+        flex: 1,
+        marginRight: tokens.spacing.m,
+    },
+    itemContainer: { 
+        backgroundColor: theme.card, 
+        padding: tokens.spacing.xl 
+    },
+    infoContainer: { 
+        flex: 1 
+    },
+    itemTitle: { 
+        ...tokens.typography.title,
+        color: theme.text,
+    },
+    detailRow: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginTop: tokens.spacing.s,
+    },
+    itemSubtitle: { 
+        ...tokens.typography.subtitle,
+        color: theme.subtext, 
+        marginLeft: tokens.spacing.s 
+    },
+    itemDetail: { 
+        ...tokens.typography.body,
+        color: theme.detailText, 
+        marginLeft: tokens.spacing.s 
+    },
+    tagsContainer: { 
+        flexDirection: 'row', 
+        flexWrap: 'wrap', 
+        marginTop: tokens.spacing.m 
+    },
+    tag: { 
+        backgroundColor: theme.tagBackground,
+        borderRadius: 12, 
+        paddingVertical: tokens.spacing.xs, 
+        paddingHorizontal: tokens.spacing.m, 
+        marginRight: tokens.spacing.s, 
+        marginBottom: tokens.spacing.s
+    },
+    tagText: { 
+        ...tokens.typography.caption,
+        color: theme.tagText, 
+        fontWeight: '500' 
+    },
+    separator: { 
+        height: 1, 
+        backgroundColor: theme.separator 
+    },
+    deleteButton: { 
+        backgroundColor: theme.danger, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        width: 100 
+    },
+    deleteButtonText: { 
+        color: theme.buttonSelectedText, 
+        fontWeight: 'bold' 
+    },
+    emptyContainer: { 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        paddingHorizontal: tokens.spacing.xxl
+    },
+    emptyText: { 
+        fontSize: 18, 
+        color: theme.emptyText, 
+        textAlign: 'center' 
+    },
 });

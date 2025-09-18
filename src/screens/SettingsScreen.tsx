@@ -1,17 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { View, Text, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { getAllDataForExport } from '../database/db';
-import { saveRankingLimit, loadRankingLimit } from '../utils/setting';
 import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
+import { saveRankingLimit, loadRankingLimit, ThemePreference } from '../utils/setting';
+import { useTheme } from '../context/ThemeContext';
+import { tokens, AppTheme } from '../theme';
 
 export const SettingsScreen = () => {
-    const [rankingLimit, setRankingLimit] = useState(5);
+    const { theme, themePreference, setThemePreference } = useTheme();
+    const styles = createStyles(theme);
+    const [rankingLimit, setRankingLimit] = React.useState(5);
 
     useFocusEffect(
-        useCallback(() => {
+        React.useCallback(() => {
             const loadSettings = async () => {
                 const limit = await loadRankingLimit();
                 setRankingLimit(limit);
@@ -29,27 +31,56 @@ export const SettingsScreen = () => {
             text2: `ランキングが上位${newLimit}件まで表示されます。`,
         });
     };
+    
+    const handleThemeChange = (newTheme: ThemePreference) => {
+        setThemePreference(newTheme);
+        Toast.show({
+            type: 'success',
+            text1: 'テーマを変更しました',
+        });
+    };
 
-    // const handleExport = async () => {
-    //     try {
-    //         const data = await getAllDataForExport();
-    //         const jsonString = JSON.stringify(data, null, 2);
-    //         const fileUri = FileSystem.cacheDirectory + 'setlist_backup.json';
-    //         await FileSystem.writeAsStringAsync(fileUri, jsonString);
-
-    //         if (!(await Sharing.isAvailableAsync())) {
-    //             Alert.alert('エラー', 'このデバイスでは共有機能を利用できません。');
-    //             return;
-    //         }
-    //         await Sharing.shareAsync(fileUri);
-    //     } catch (error) {
-    //         console.error(error);
-    //         Alert.alert('エクスポート失敗', 'データのエクスポート中にエラーが発生しました。');
-    //     }
-    // };
-
-    return (
+return (
         <View style={styles.container}>
+            {/* テーマ設定 */}
+            <View style={styles.settingItem}>
+                <Text style={styles.label}>テーマ設定</Text>
+                <View style={[styles.optionsContainer, { justifyContent: 'space-around' }]}>
+                    {(['light', 'dark'] as ThemePreference[]).map((t) => {
+                        const isSelected = themePreference === t;
+                        const iconColor = isSelected ? theme.buttonSelectedText : theme.buttonText;
+
+                        return (
+                            <TouchableOpacity
+                                key={t}
+                                style={[
+                                    styles.optionButton,
+                                    isSelected && styles.optionButtonSelected,
+                                ]}
+                                onPress={() => handleThemeChange(t)}
+                            >
+                                <View style={styles.optionButtonContent}>
+                                    <Ionicons
+                                        name={t === 'light' ? 'sunny-outline' : 'moon-outline'}
+                                        size={22}
+                                        color={iconColor}
+                                    />
+                                    <Text
+                                        style={[
+                                            styles.optionText,
+                                            isSelected && styles.optionTextSelected,
+                                        ]}
+                                    >
+                                        {t === 'light' ? 'ライト' : 'ダーク'}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            </View>
+            
+
             <View style={styles.settingItem}>
                 <Text style={styles.label}>ランキングの表示件数</Text>
                 <View style={styles.optionsContainer}>
@@ -74,51 +105,52 @@ export const SettingsScreen = () => {
                     ))}
                 </View>
             </View>
-
-            {/* <View style={styles.settingItem}>
-                <Text style={styles.label}>データ管理</Text>
-                <Button title="全データをエクスポート" onPress={handleExport} />
-            </View> */}
         </View>
     );
 };
-
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: 20,
+        backgroundColor: theme.background,
+        paddingTop: tokens.spacing.xxl,
     },
     settingItem: {
-        backgroundColor: '#fff',
-        padding: 16,
-        marginBottom: 16,
+        backgroundColor: theme.card,
+        padding: tokens.spacing.xl,
+        marginBottom: tokens.spacing.xl,
     },
     label: {
-        fontSize: 16,
+        fontSize: tokens.typography.subtitle.fontSize,
         fontWeight: 'bold',
-        marginBottom: 12,
+        marginBottom: tokens.spacing.l,
+        color: theme.text,
     },
     optionsContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'space-around',
     },
     optionButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 20, 
+        paddingVertical: tokens.spacing.m,
+        paddingHorizontal: tokens.spacing.xl,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#007aff',
+        borderColor: theme.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     optionButtonSelected: {
-        backgroundColor: '#007aff',
+        backgroundColor: theme.buttonSelected,
+    },
+    optionButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     optionText: {
-        color: '#007aff',
+        color: theme.buttonText,
         fontSize: 16,
         fontWeight: '500',
     },
     optionTextSelected: {
-        color: '#fff',
+        color: theme.buttonSelectedText,
     },
 });

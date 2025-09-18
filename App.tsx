@@ -1,123 +1,140 @@
 import 'react-native-gesture-handler';
 
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 
 import { initDatabase } from './src/database/db';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { navigationLightTheme, navigationDarkTheme } from './src/theme';
 
 import { LiveListScreen } from './src/screens/LiveListScreen';
 import { AddLiveScreen } from './src/screens/AddLiveScreen';
 import { LiveDetailScreen } from './src/screens/LiveDetailScreen';
 import { EditSetlistScreen } from './src/screens/EditSetlistScreen';
-import { SettingsScreen} from './src/screens/SettingsScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { MemoDetailScreen } from './src/screens/MemoDetailScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { CalendarScreen } from './src/screens/CalendarScreen';
 
 export type RootStackParamList = {
-  LiveList: undefined;
-  AddLive: { liveId?: number };
-  LiveDetail: { liveId: number };
-  AddSong: { liveId: number };
-  EditSetlist: { liveId: number; artistName?: string; };
-  Settings: undefined;
-  MemoDetail: {liveId: number};
-  Stats: undefined;
-  Calendar: undefined;
+    LiveList: undefined;
+    AddLive: { liveId?: number };
+    LiveDetail: { liveId: number };
+    AddSong: { liveId: number };
+    EditSetlist: { liveId: number; artistName?: string; };
+    Settings: undefined;
+    MemoDetail: {liveId: number};
+    Stats: undefined;
+    Calendar: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default function App() {
-  const [dbInitialized, setDbInitialized] = useState(false);
+const AppNavigator = () => {
+    const { isDarkMode, theme } = useTheme();
 
-  useEffect(() => {
-
-    initDatabase()
-      .then(() => {
-        setDbInitialized(true); 
-        console.log('Database is ready.');
-      })
-      .catch((error) => {
-        console.error('Database initialization failed:', error);
-        
-      });
-  }, []); 
-
-  // データベースの準備ができるまでローディング画面を表示
-  if (!dbInitialized) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.loadingText}>データベースを準備中...</Text>
-      </View>
+        <NavigationContainer theme={isDarkMode ? navigationDarkTheme : navigationLightTheme}>
+            <Stack.Navigator
+                initialRouteName="LiveList"
+                screenOptions={{
+                    headerStyle: {
+                        backgroundColor: theme.card,
+                    },
+                    headerTintColor: theme.text,
+                    headerTitleStyle: {
+                        fontWeight: 'bold',
+                    },
+                    contentStyle: {
+                        backgroundColor: theme.background,
+                    }
+                }}
+            >
+                <Stack.Screen 
+                  name="LiveList" 
+                  component={LiveListScreen} 
+                  options={{ title: 'ライブ一覧' }} 
+                />
+                <Stack.Screen 
+                name="AddLive" 
+                component={AddLiveScreen} 
+                options={{ title: '新しいライブを記録', presentation: 'modal' }} 
+                />
+                <Stack.Screen 
+                name="LiveDetail" 
+                component={LiveDetailScreen} 
+                options={{ title: 'ライブ詳細' }} />
+                <Stack.Screen 
+                name="EditSetlist" 
+                component={EditSetlistScreen} 
+                options={{ title: 'セットリストを編集' }} />
+                <Stack.Screen 
+                name="Settings" 
+                component={SettingsScreen} 
+                options={{ title: '設定' }} />
+                <Stack.Screen 
+                name="MemoDetail" 
+                component={MemoDetailScreen} 
+                options={{ title: '感想メモ' }} />
+                <Stack.Screen 
+                name="Stats" 
+                component={StatsScreen} 
+                options={{ title: '統計・分析' }} />
+                <Stack.Screen 
+                  name="Calendar" 
+                  component={CalendarScreen} 
+                  options={{ title: 'カレンダー' }} 
+                />
+            </Stack.Navigator>
+        </NavigationContainer>
     );
-  }
+};
 
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="LiveList">
-          <Stack.Screen
-            name="LiveList"
-            component={LiveListScreen}
-            options={{ title: 'ライブ一覧' }}
-          />
-          <Stack.Screen
-            name="AddLive"
-            component={AddLiveScreen}
-            options={{ title: '新しいライブを記録', presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="LiveDetail"
-            component={LiveDetailScreen}
-            options={{ title: 'ライブ詳細' }}
-          />
-          <Stack.Screen
-            name="EditSetlist"
-            component={EditSetlistScreen}
-            options={{ title: 'セットリストを編集' }}
-          />
-          <Stack.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{ title: '設定'}}
-          />
-          <Stack.Screen
-            name="MemoDetail"
-            component={MemoDetailScreen}
-            options={{ title: '感想メモ'}}
-          />
-          <Stack.Screen
-            name="Stats"
-            component={StatsScreen}
-            options={{ title: '統計・分析' }}
-          />
-          <Stack.Screen
-            name="Calendar"
-            component={CalendarScreen}
-            options={{ title: 'カレンダー' }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-      <Toast />
-    </GestureHandlerRootView>
-  );
+export default function App() {
+    const [dbInitialized, setDbInitialized] = useState(false);
+
+    useEffect(() => {
+        initDatabase()
+            .then(() => {
+                setDbInitialized(true);
+                console.log('Database is ready.');
+            })
+            .catch((error) => {
+                console.error('Database initialization failed:', error);
+            });
+    }, []);
+
+    if (!dbInitialized) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" />
+                <Text style={styles.loadingText}>データベースを準備中...</Text>
+            </View>
+        );
+    }
+
+    return (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <ThemeProvider>
+                <AppNavigator />
+                <Toast />
+            </ThemeProvider>
+        </GestureHandlerRootView>
+    );
 }
 
-// ローディング画面用のスタイル
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-  }
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+    }
 });

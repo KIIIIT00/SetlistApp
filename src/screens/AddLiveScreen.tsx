@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LiveForm } from '../components/LiveForm';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { Live, getLiveById } from '../database/db';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { useTheme } from '../context/ThemeContext';
+import { AppTheme } from '../theme';
 
 type AddLiveScreenProps = NativeStackScreenProps<RootStackParamList, 'AddLive'>;
 
@@ -14,6 +16,8 @@ export const AddLiveScreen = ({ route, navigation }: AddLiveScreenProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const headerHeight = useHeaderHeight();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -67,5 +71,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+});
+
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

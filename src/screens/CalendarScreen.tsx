@@ -5,6 +5,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Calendar, LocaleConfig, DateData } from 'react-native-calendars';
 import { getLives, Live } from '../database/db';
 import { RootStackParamList } from '../../App';
+import { useTheme } from '../context/ThemeContext';
+import { AppTheme, tokens } from '../theme';
 
 LocaleConfig.locales['jp'] = {
   monthNames: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
@@ -29,6 +31,9 @@ export const CalendarScreen = () => {
     const [isLoading, setIsLoading] = useState(true);
     const navigation = useNavigation<CalendarScreenNavigationProp>();
 
+    const { theme } = useTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
     useFocusEffect(
         useCallback(() => {
             const loadLivesForCalendar = async () => {
@@ -47,10 +52,10 @@ export const CalendarScreen = () => {
             marks[live.liveDate] = {
                 customStyles: {
                     container: {
-                        backgroundColor: '#eef2ff',
+                        backgroundColor: theme.tagBackground,
                     },
                     text: {
-                        color: '#4338ca',
+                        color: theme.tagText,
                         fontWeight: 'bold',
                     },
                 },
@@ -91,9 +96,15 @@ export const CalendarScreen = () => {
                 markingType={'custom'}
                 monthFormat={'yyyy年 M月'}
                 theme={{
-                    selectedDayBackgroundColor: '#007aff',
-                    todayTextColor: '#007aff',
-                    arrowColor: '#007aff',
+                    selectedDayBackgroundColor: theme.primary,
+                    todayTextColor: theme.primary,
+                    arrowColor: theme.primary,
+                    textSectionTitleColor: theme.subtext,
+                    backgroundColor: theme.card,
+                    calendarBackground: theme.card,
+                    monthTextColor: theme.text,
+                    textMonthFontWeight: 'bold',
+                    dayTextColor: theme.text
                 }}
             />
             <View style={styles.listContainer}>
@@ -148,6 +159,45 @@ const styles = StyleSheet.create({
     },
     noDataText: {
         color: '#888',
+        fontSize: 16,
+    },
+});
+
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.background,
+    },
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    listContainer: {
+        flex: 1,
+        borderTopWidth: 1,
+        borderTopColor: theme.separator,
+    },
+    liveItem: {
+        backgroundColor: theme.card,
+        paddingVertical: tokens.spacing.l,
+        paddingHorizontal: tokens.spacing.xl,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.inputBackground,
+        color: theme.text,
+    },
+    liveItemTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: theme.text,
+    },
+    liveItemArtist: {
+        fontSize: 14,
+        color: theme.subtext,
+        marginTop: tokens.spacing.xs,
+    },
+    noDataText: {
+        color: theme.emptyText,
         fontSize: 16,
     },
 });

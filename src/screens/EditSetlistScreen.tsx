@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Keyboard, ScrollView, Alert, KeyboardAvoidingView, Platform, FlatList } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -8,6 +8,8 @@ import { getSetlistsForLive, Setlist, updateSetlistForLive, getSongsByArtist } f
 import { RootStackParamList } from '../../App';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { useTheme } from '../context/ThemeContext';
+import { AppTheme, tokens } from '../theme';
 
 type EditSetlistScreenRouteProp = RouteProp<RootStackParamList, 'EditSetlist'>;
 type EditSetlistScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'EditSetlist'>;
@@ -36,6 +38,9 @@ export const EditSetlistScreen = () => {
   const flatListRef = useRef<FlatList<SetlistItemForUpdate>>(null);
   const headerHeight = useHeaderHeight();
 
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   const handleSave = useCallback(async () => {
     try{
       const setlistForDb = setlist.map(({ clientId, ...rest}) => rest);
@@ -51,9 +56,9 @@ export const EditSetlistScreen = () => {
     useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => 
-      <Button onPress={handleSave} title="保存" />,
+      <Button onPress={handleSave} title="保存" color={theme.primary}/>,
     });
-  }, [navigation, handleSave]);
+  }, [navigation, handleSave, theme]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -184,7 +189,7 @@ export const EditSetlistScreen = () => {
     return (
       <View style={[styles.itemContainer, isActive && styles.itemActive]}>
         <TouchableOpacity onLongPress={drag} style={styles.dragHandle}>
-          <Ionicons name="menu" size={24} color="#aaa" />
+          <Ionicons name="menu" size={24} color={theme.icon} />
         </TouchableOpacity>
         
         <View style={styles.inputWrapper}>
@@ -192,6 +197,7 @@ export const EditSetlistScreen = () => {
             style={isHeader ? styles.headerInput : styles.songInput}
             value={item.songName}
             placeholder={isHeader ? 'ヘッダー (例: ENCORE)' : `${item.trackNumber}. 曲名`}
+            placeholderTextColor={theme.subtext}
             onChangeText={(text) => {
               updateItem(index, text);
               if (!isHeader) {
@@ -238,11 +244,11 @@ export const EditSetlistScreen = () => {
         </View>
 
         <TouchableOpacity onPress={() => removeItem(index)} style={styles.deleteButton}>
-          <Ionicons name="remove-circle" size={24} color="#ff3b30" />
+          <Ionicons name="remove-circle" size={24} color={theme.danger} />
         </TouchableOpacity>
       </View>
     );
-  }, [setlist, allSongs, songSuggestions, focusedIndex]);
+  }, [setlist, allSongs, songSuggestions, focusedIndex, theme]);
 
   return (
     <KeyboardAvoidingView 
@@ -266,151 +272,226 @@ export const EditSetlistScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: tokens.spacing.m,
+    backgroundColor: theme.card,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.separator,
+  },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#fff',
+    padding: tokens.spacing.m,
+    backgroundColor: theme.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.separator,
   },
   itemActive: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.inputBackground,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2, },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
   },
   dragHandle: {
-    paddingHorizontal: 10,
+    paddingHorizontal: tokens.spacing.m,
   },
   inputWrapper: {
     flex: 1,
+    zIndex: 1,
   },
   songInput: {
     fontSize: 16,
-    padding: 8,
+    padding: tokens.spacing.s,
+    color: theme.text,
   },
   headerInput: {
     fontSize: 16,
-    padding: 8,
+    padding: tokens.spacing.s,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.text,
     textAlign: 'center',
   },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 20,
-  },
-  saveButtonContainer: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#f5f5f5',
-  },
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff' 
-  },
-  addSongContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#f9f9f9',
-    zIndex: 1,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+  deleteButton: {
+    padding: tokens.spacing.m,
   },
   suggestionList: {
     maxHeight: 150,
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.separator,
     borderRadius: 8,
-    marginBottom: 10,
+    marginTop: tokens.spacing.xs,
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
   },
   suggestionItem: {
-    padding: 12,
+    padding: tokens.spacing.l,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.separator,
   },
-  buttonGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  songItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff'
-  },
-  headerItem: {
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  headerText: {
-    paddingHorizontal: 10,
-    fontWeight: 'bold',
-    color: '#555',
+  suggestionText: {
     fontSize: 16,
-  },
-  headerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ddd',
-  },
-  songInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  trackNumber: { 
-    fontSize: 16, 
-    color: '#888', 
-    marginRight: 16,
-    width: 30,
-  },
-  songName: { 
-    fontSize: 18,
-    flex: 1,
-  },
-  deleteButton: {
-    padding: 10,
-    marginLeft: 10,
-  },
-  deleteButtonAbsolute: {
-    position: 'absolute',
-    right: 10,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    padding: 10,
-  },
-  deleteButtonText: {
-    fontSize: 22,
-    color: '#aaa',
-    fontWeight: '300',
-  },
-  emptyContainer: { 
-    padding: 40, 
-    alignItems: 'center' 
-  },
-  emptyText: { 
-    color: '#888' 
+    color: theme.text,
   },
 });
+
+
+// const styles = StyleSheet.create({
+//   itemContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     padding: 10,
+//     backgroundColor: '#fff',
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#eee',
+//   },
+//   itemActive: {
+//     backgroundColor: '#f0f0f0',
+//     shadowColor: "#000",
+//     shadowOffset: { width: 0, height: 2, },
+//     shadowOpacity: 0.25,
+//     shadowRadius: 3.84,
+//     elevation: 5,
+//   },
+//   dragHandle: {
+//     paddingHorizontal: 10,
+//   },
+//   inputWrapper: {
+//     flex: 1,
+//   },
+//   songInput: {
+//     fontSize: 16,
+//     padding: 8,
+//   },
+//   headerInput: {
+//     fontSize: 16,
+//     padding: 8,
+//     fontWeight: 'bold',
+//     color: '#333',
+//     textAlign: 'center',
+//   },
+//   buttonsContainer: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//     marginVertical: 20,
+//   },
+//   saveButtonContainer: {
+//     padding: 20,
+//     borderTopWidth: 1,
+//     borderTopColor: '#eee',
+//     backgroundColor: '#f5f5f5',
+//   },
+//   container: { 
+//     flex: 1, 
+//     backgroundColor: '#fff' 
+//   },
+//   addSongContainer: {
+//     padding: 16,
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#eee',
+//     backgroundColor: '#f9f9f9',
+//     zIndex: 1,
+//   },
+//   input: {
+//     borderWidth: 1,
+//     borderColor: '#ccc',
+//     backgroundColor: '#fff',
+//     padding: 10,
+//     borderRadius: 8,
+//     marginBottom: 10,
+//   },
+//   suggestionList: {
+//     maxHeight: 150,
+//     backgroundColor: '#fff',
+//     borderWidth: 1,
+//     borderColor: '#ddd',
+//     borderRadius: 8,
+//     marginBottom: 10,
+//   },
+//   suggestionItem: {
+//     padding: 12,
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#eee',
+//   },
+//   buttonGroup: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//   },
+//   songItem: {
+//     paddingVertical: 10,
+//     paddingHorizontal: 20,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#eee',
+//     backgroundColor: '#fff'
+//   },
+//   headerItem: {
+//     paddingVertical: 16,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#f0f0f0',
+//   },
+//   headerText: {
+//     paddingHorizontal: 10,
+//     fontWeight: 'bold',
+//     color: '#555',
+//     fontSize: 16,
+//   },
+//   headerLine: {
+//     flex: 1,
+//     height: 1,
+//     backgroundColor: '#ddd',
+//   },
+//   songInfo: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     flex: 1,
+//   },
+//   trackNumber: { 
+//     fontSize: 16, 
+//     color: '#888', 
+//     marginRight: 16,
+//     width: 30,
+//   },
+//   songName: { 
+//     fontSize: 18,
+//     flex: 1,
+//   },
+//   deleteButton: {
+//     padding: 10,
+//     marginLeft: 10,
+//   },
+//   deleteButtonAbsolute: {
+//     position: 'absolute',
+//     right: 10,
+//     top: 0,
+//     bottom: 0,
+//     justifyContent: 'center',
+//     padding: 10,
+//   },
+//   deleteButtonText: {
+//     fontSize: 22,
+//     color: '#aaa',
+//     fontWeight: '300',
+//   },
+//   emptyContainer: { 
+//     padding: 40, 
+//     alignItems: 'center' 
+//   },
+//   emptyText: { 
+//     color: '#888' 
+//   },
+// });

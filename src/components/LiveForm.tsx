@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { addLive, updateLive, Live, getDistinctArtists, getDistinctVenues, getDistinctTags } from '../database/db';
 import { StarRating } from './StarRating';
+import { useTheme } from '../context/ThemeContext';
+import { AppTheme, tokens } from '../theme';
 
 type AutoCompleteInputProps = {
   label: string;
@@ -15,6 +17,8 @@ type AutoCompleteInputProps = {
 
 const AutoCompleteInput = ({ label, value, onChangeText, placeholder, suggestions, onSuggestionPress }: AutoCompleteInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   return (
     <View style={styles.inputWrapper}>
       <Text style={styles.label}>{label}</Text>
@@ -23,6 +27,7 @@ const AutoCompleteInput = ({ label, value, onChangeText, placeholder, suggestion
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        placeholderTextColor={theme.subtext}
         onFocus={() => setShowSuggestions(true)}
         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
       />
@@ -68,6 +73,8 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
   const [rating, setRating] = useState(initialData?.rating || 0);
   const [memo, setMemo] = useState(initialData?.memo || '');
 
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   useEffect(() => {
     if (initialData?.liveDate) {
@@ -163,7 +170,8 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
         style={styles.input}
         value={liveName}
         onChangeText={setLiveName}
-        placeholder="例：React Native Tour 2025"
+        placeholder="例：〇〇 Tour 2025"
+        placeholderTextColor={theme.subtext}
       />
       
       <Text style={styles.label}>日付 *</Text>
@@ -180,6 +188,7 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
           placeholder="YYYY"
           keyboardType="number-pad"
           maxLength={4}
+          placeholderTextColor={theme.subtext}
         />
         <Text style={styles.dateSeparator}>年</Text>
 
@@ -196,6 +205,7 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
           placeholder="MM"
           keyboardType="number-pad"
           maxLength={2}
+          placeholderTextColor={theme.subtext}
         />
         <Text style={styles.dateSeparator}>月</Text>
 
@@ -207,6 +217,7 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
           placeholder="DD"
           keyboardType="number-pad"
           maxLength={2}
+          placeholderTextColor={theme.subtext}
         />
         <Text style={styles.dateSeparator}>日</Text>
       </View>
@@ -264,46 +275,123 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
         value={memo}
         onChangeText={setMemo}
         placeholder="ライブの感想などを記録できます"
+        placeholderTextColor={theme.subtext}
         multiline={true}
         numberOfLines={4}
       />
 
-      <Button title={initialData ? "更新する" : "ライブ情報を保存"} onPress={handleSaveLive} />
+      <Button 
+        title={initialData ? "更新する" : "ライブ情報を保存"} 
+        onPress={handleSaveLive}
+        color={theme.primary} />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { padding: 16 },
-  inputWrapper: {
-    marginBottom: 20,
+// const styles = StyleSheet.create({
+//   container: { padding: 16 },
+//   inputWrapper: {
+//     marginBottom: 20,
+//   },
+//   label: { 
+//     fontSize: 16, 
+//     fontWeight: 'bold', 
+//     marginBottom: 8, 
+//     color: '#333' 
+//   },
+//   input: {
+//     borderWidth: 1,
+//     borderColor: '#ccc',
+//     backgroundColor: '#fff',
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     borderRadius: 8,
+//     fontSize: 16,
+//   },
+//   dateInputContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginBottom: 20,
+//   },
+//   dateInput: {
+//     borderWidth: 1,
+//     borderColor: '#ccc',
+//     backgroundColor: '#fff',
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     borderRadius: 8,
+//     fontSize: 16,
+//     textAlign: 'center',
+//     flex: 1,
+//   },
+//   dateSeparator: {
+//     fontSize: 16,
+//     marginHorizontal: 10,
+//   },
+//   suggestionList: {
+//     maxHeight: 150,
+//     backgroundColor: '#fff',
+//     borderWidth: 1,
+//     borderColor: '#ddd',
+//     borderRadius: 8,
+//     marginTop: 4,
+//   },
+//   suggestionItem: {
+//     padding: 12,
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#eee',
+//   },
+//   suggestionText: {
+//     fontSize: 16,
+//   },
+//   starContainer: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
+//     paddingVertical: 10,
+//     marginBottom: 20,
+//   },
+//   memoInput: {
+//     height: 120,
+//     textAlignVertical: 'top',
+//   }
+// });
+
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  container: {
+    padding: tokens.spacing.xl,
+    backgroundColor: theme.background,
   },
-  label: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    marginBottom: 8, 
-    color: '#333' 
+  inputWrapper: {
+    marginBottom: tokens.spacing.xxl,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: tokens.spacing.s,
+    color: theme.text,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: theme.separator,
+    backgroundColor: theme.inputBackground,
+    color: theme.text,
+    paddingHorizontal: tokens.spacing.l,
+    paddingVertical: tokens.spacing.m,
     borderRadius: 8,
     fontSize: 16,
   },
   dateInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: tokens.spacing.xxl,
   },
   dateInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: theme.separator,
+    backgroundColor: theme.inputBackground, 
+    paddingHorizontal: tokens.spacing.l,
+    paddingVertical: tokens.spacing.m,
+    color: theme.text,
     borderRadius: 8,
     fontSize: 16,
     textAlign: 'center',
@@ -311,20 +399,21 @@ const styles = StyleSheet.create({
   },
   dateSeparator: {
     fontSize: 16,
-    marginHorizontal: 10,
+    color: theme.subtext,
+    marginHorizontal: tokens.spacing.m,
   },
   suggestionList: {
     maxHeight: 150,
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.separator,
     borderRadius: 8,
-    marginTop: 4,
+    marginTop: tokens.spacing.xs,
   },
   suggestionItem: {
-    padding: 12,
+    padding: tokens.spacing.l,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.separator,
   },
   suggestionText: {
     fontSize: 16,
@@ -333,7 +422,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
-    marginBottom: 20,
+    marginBottom: tokens.spacing.xxl,
   },
   memoInput: {
     height: 120,

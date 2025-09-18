@@ -1,8 +1,19 @@
-import React, { useCallback, useState, useLayoutEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, ScrollView } from 'react-native';
+import React, { useCallback, useState, useLayoutEffect, useRef, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList, 
+  Button, 
+  TouchableOpacity,
+  Image,
+  Alert,
+  ActivityIndicator,
+  Share
+} from 'react-native';
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Alert, Share } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ViewShot from 'react-native-view-shot';
 import { getLiveById, getSetlistsForLive, Live, Setlist, duplicateLiveById, deleteLive } from '../database/db';
@@ -10,6 +21,8 @@ import { RootStackParamList } from '../../App';
 import { StarRating } from '../components/StarRating';
 import { HeaderMenu } from '../components/HeaderMenu';
 import { ShareableImage } from '../components/ShareableImage';
+import { useTheme } from '../context/ThemeContext';
+import { AppTheme, tokens } from '../theme';
 
 type LiveDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LiveDetail'>;
 type LiveDetailScreenRouteProp = RouteProp<RootStackParamList, 'LiveDetail'>;
@@ -21,6 +34,9 @@ export const LiveDetailScreen = () => {
 
   const [live, setLive] = useState<Live | null>(null);
   const [setlist, setSetlist] = useState<Setlist[]>([]);
+
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const imageRef = useRef<ViewShot>(null);
 
@@ -193,15 +209,15 @@ export const LiveDetailScreen = () => {
       <View style={styles.header}>
         <Text style={styles.liveName}>{live.liveName}</Text>
         <View style={styles.detailRow}>
-          <MaterialCommunityIcons name="account-music" size={18} color="#555" />
+          <MaterialCommunityIcons name="account-music" size={18} color={theme.icon} />
           <Text style={styles.detailText}>{live.artistName}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Ionicons name="location-sharp" size={18} color="#555" />
+          <Ionicons name="location-sharp" size={18} color={theme.icon} />
           <Text style={styles.detailText}>{live.venueName}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Ionicons name="calendar" size={18} color="#555" />
+          <Ionicons name="calendar" size={18} color={theme.icon} />
           <Text style={styles.detailText}>{live.liveDate}</Text>
         </View>
         <View style={styles.detailRow}>
@@ -250,116 +266,286 @@ export const LiveDetailScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#f5f5f5',
+//   },
+//   loadingContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   header: {
+//     backgroundColor: '#fff',
+//     padding: 20,
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#eee',
+//   },
+//   liveName: {
+//     fontSize: 26,
+//     fontWeight: 'bold',
+//     marginBottom: 16,
+//   },
+//   detailRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginBottom: 10,
+//   },
+//   detailText: {
+//     fontSize: 16,
+//     color: '#333',
+//     marginLeft: 12,
+//   },
+//   tagsContainer: {
+//     flexDirection: 'row',
+//     flexWrap: 'wrap',
+//     marginTop: 12,
+//     borderTopWidth: 1,
+//     borderTopColor: '#f0f0f0',
+//     paddingTop: 12,
+//   },
+//   tag: {
+//     backgroundColor: '#eef2ff',
+//     borderRadius: 12,
+//     paddingVertical: 4,
+//     paddingHorizontal: 10,
+//     marginRight: 6,
+//     marginBottom: 6,
+//   },
+//   tagText: {
+//     fontSize: 12,
+//     color: '#4338ca',
+//     fontWeight: '500',
+//   },
+//   memoContainer: {
+//     marginTop: 16,
+//     backgroundColor: '#fff',
+//     paddingHorizontal: 20,
+//     paddingVertical: 10,
+//   },
+//   setlistContainer: {
+//     marginTop: 16,
+//     paddingHorizontal: 20,
+//   },
+//   sectionTitle: {
+//     fontSize: 20,
+//     fontWeight: 'bold',
+//     marginBottom: 12,
+//   },
+//   setlistItem: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#fff',
+//     padding: 16,
+//     borderRadius: 8,
+//   },
+//   headerItem: {
+//     paddingVertical: 20,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginVertical: 8,
+//   },
+//   headerText: {
+//     paddingHorizontal: 10,
+//     fontWeight: 'bold',
+//     color: '#555',
+//     fontSize: 16,
+//   },
+//   headerLine: {
+//     flex: 1,
+//     height: 1,
+//     backgroundColor: '#ddd',
+//   },
+//   trackNumber: {
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//     color: '#888',
+//     marginRight: 12,
+//     width: 30,
+//   },
+//   songName: {
+//     fontSize: 16,
+//     flex: 1,
+//   },
+//   emptyText: {
+//     textAlign: 'center',
+//     color: '#888',
+//     marginTop: 20,
+//     fontSize: 16,
+//   },
+//   buttonContainer: {
+//     marginTop: 20,
+//     marginBottom: 40,
+//   },
+// });
+
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: theme.background,
   },
+  section: {
+    backgroundColor: theme.card,
+    padding: tokens.spacing.xl,
+    marginBottom: tokens.spacing.m,
+  },
+  image: {
+    width: '100%',
+    height: 250,
+  },
+  buttonContainer: {
+    marginTop: tokens.spacing.xxl,
+    marginBottom: 40,
+  },
+
   header: {
-    backgroundColor: '#fff',
-    padding: 20,
+    backgroundColor: theme.card,
+    padding: tokens.spacing.xxl,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.separator,
   },
   liveName: {
     fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 16,
+    color: theme.text,
+    marginBottom: tokens.spacing.xl,
   },
+  sectionTitle: {
+    ...tokens.typography.title,
+    color: theme.text,
+    marginBottom: tokens.spacing.l,
+  },
+
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: tokens.spacing.m,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: tokens.spacing.m,
+  },
+  icon: {
+    fontSize: 20,
+    color: theme.icon,
+    marginRight: tokens.spacing.m,
   },
   detailText: {
     fontSize: 16,
-    color: '#333',
-    marginLeft: 12,
+    color: theme.subtext,
   },
+
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 12,
+    marginTop: tokens.spacing.l,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
+    borderTopColor: theme.inputBackground,
+    paddingTop: tokens.spacing.l,
   },
   tag: {
-    backgroundColor: '#eef2ff',
+    backgroundColor: theme.tagBackground,
     borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    marginRight: 6,
-    marginBottom: 6,
+    paddingVertical: tokens.spacing.xs,
+    paddingHorizontal: tokens.spacing.m,
+    marginRight: tokens.spacing.ss,
+    marginBottom: tokens.spacing.ss,
   },
   tagText: {
     fontSize: 12,
-    color: '#4338ca',
+    color: theme.tagText,
     fontWeight: '500',
   },
-  memoContainer: {
-    marginTop: 16,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
+
   setlistContainer: {
-    marginTop: 16,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    marginTop: tokens.spacing.xl,
+    paddingHorizontal: tokens.spacing.xxl,
   },
   setlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: theme.card,
+    padding: tokens.spacing.xl,
     borderRadius: 8,
   },
+  songItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.separator,
+  },
+  songNumber: {
+    fontSize: 16,
+    color: theme.subtext,
+    width: 30,
+  },
+  trackNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.subtext,
+    marginRight: tokens.spacing.l,
+    width: 30,
+  },
+  songName: {
+    fontSize: 16,
+    color: theme.text,
+    flex: 1,
+  },
+
+  memoContainer: {
+    marginTop: tokens.spacing.xl,
+    backgroundColor: theme.card,
+    paddingHorizontal: tokens.spacing.xxl,
+    paddingVertical: tokens.spacing.m,
+  },
+  memoPreview: {
+    ...tokens.typography.body,
+    color: theme.subtext,
+    lineHeight: 22,
+  },
+  noDataText: {
+    color: theme.subtext,
+    paddingVertical: tokens.spacing.m,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: theme.emptyText,
+    marginTop: 20,
+    fontSize: 16,
+  },
+
+
   headerItem: {
-    paddingVertical: 20,
+    paddingVertical: tokens.spacing.xxl,
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 8,
   },
   headerText: {
-    paddingHorizontal: 10,
+    paddingHorizontal: tokens.spacing.m,
     fontWeight: 'bold',
-    color: '#555',
+    color: theme.subtext,
     fontSize: 16,
   },
   headerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
+    backgroundColor: theme.separator,
   },
-  trackNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#888',
-    marginRight: 12,
-    width: 30,
+  title: {
+    ...tokens.typography.title,
+    color: theme.text,
+    fontSize: 24,
+    marginBottom: tokens.spacing.s,
   },
-  songName: {
-    fontSize: 16,
-    flex: 1,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#888',
-    marginTop: 20,
-    fontSize: 16,
-  },
-  buttonContainer: {
-    marginTop: 20,
-    marginBottom: 40,
-  },
+
 });

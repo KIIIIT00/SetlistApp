@@ -1,54 +1,90 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { RankingItem } from '../database/db';
+import { useTheme } from '../context/ThemeContext';
+import { AppTheme, tokens } from '../theme';
 
 interface RankingListProps {
   data: RankingItem[];
   unit?: string;
 }
 
-export const RankingList = ({ data, unit = '回' }: RankingListProps) => {
-  if (data.length === 0) {
+export const RankingList = ({ data }: RankingListProps) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
+  if (!data || data.length === 0) {
     return <Text style={styles.noDataText}>データがありません</Text>;
   }
+
   return (
     <View>
       {data.map((item, index) => (
-        <View key={index} style={styles.rankingItem}>
-          <Text style={styles.rankingRank}>{index + 1}.</Text>
-          <Text style={styles.rankingName}>{item.name}</Text>
-          <Text style={styles.rankingCount}>{item.count}{unit}</Text>
+        <View key={index} style={styles.itemContainer}>
+          <Text style={styles.rank}>{index + 1}.</Text>
+          <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.count}>{item.count}</Text>
         </View>
       ))}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  rankingItem: {
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingVertical: tokens.spacing.s,
   },
-  rankingRank: {
+  rank: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#888',
+    color: theme.subtext,
     width: 30,
   },
-  rankingName: {
-    fontSize: 16,
+  name: {
     flex: 1,
+    fontSize: 16,
+    color: theme.text,
+    marginHorizontal: tokens.spacing.s,
   },
-  rankingCount: {
+  count: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: theme.text,
   },
   noDataText: {
-    color: '#888',
+    color: theme.subtext,
     textAlign: 'center',
-    paddingVertical: 10,
-  },
+    padding: tokens.spacing.m,
+  }
 });
+
+// const styles = StyleSheet.create({
+//   rankingItem: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingVertical: 8,
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#f0f0f0',
+//   },
+//   rankingRank: {
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//     color: '#888',
+//     width: 30,
+//   },
+//   rankingName: {
+//     fontSize: 16,
+//     flex: 1,
+//   },
+//   rankingCount: {
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//   },
+//   noDataText: {
+//     color: '#888',
+//     textAlign: 'center',
+//     paddingVertical: 10,
+//   },
+// });

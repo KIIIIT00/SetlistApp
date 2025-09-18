@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatsCard } from '../components/StatsCard';
 import { RankingList } from '../components/RankingList';
 import { loadRankingLimit } from '../utils/setting';
+import { useTheme } from '../context/ThemeContext';
+import { tokens, AppTheme } from '../theme';
 
 export const StatsScreen = () => {
   const [summary, setSummary] = useState<StatsSummary | null>(null);
@@ -26,6 +28,9 @@ export const StatsScreen = () => {
 
   const [rankingLimit, setRankingLimit] = useState(5);
   const [songRankingLimit, setSongRankingLimit] = useState(10);
+
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   useFocusEffect(
     useCallback(() => {
@@ -105,31 +110,46 @@ export const StatsScreen = () => {
 };
 
 // --- スタイル定義 ---
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  summaryItem: {
-    alignItems: 'center',
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.background,
+        paddingHorizontal: tokens.spacing.m, 
+        paddingVertical: tokens.spacing.s, 
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    summaryContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around', 
+        paddingVertical: tokens.spacing.m,
+    },
+    summaryItem: {
+        alignItems: 'center', 
+    },
+    summaryValue: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: theme.text, 
+        marginBottom: tokens.spacing.xs,
+    },
+    summaryLabel: {
+        fontSize: 14,
+        color: theme.subtext, 
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: tokens.spacing.xxl,
+        backgroundColor: theme.background,
+    },
+    emptyText: {
+        fontSize: 18,
+        color: theme.emptyText,
+        textAlign: 'center',
+    },
 });
