@@ -165,120 +165,136 @@ export const LiveForm = ({ onSave, initialData }: LiveFormProps) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>ライブ名 *</Text>
-      <TextInput
-        style={styles.input}
-        value={liveName}
-        onChangeText={setLiveName}
-        placeholder="例：〇〇 Tour 2025"
-        placeholderTextColor={theme.subtext}
-      />
-      
-      <Text style={styles.label}>日付 *</Text>
-      <View style={styles.dateInputContainer}>
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>ライブ名 *</Text>
         <TextInput
-          style={styles.dateInput}
-          value={year}
-          onChangeText={(text) => {
-            handleNumericInputChange(setYear, text);
-            if (text.length === 4) {
-              monthInputRef.current?.focus();
-            }
-          }}
-          placeholder="YYYY"
-          keyboardType="number-pad"
-          maxLength={4}
+          style={styles.input}
+          value={liveName}
+          onChangeText={setLiveName}
+          placeholder="例：〇〇 Tour 2025"
           placeholderTextColor={theme.subtext}
         />
-        <Text style={styles.dateSeparator}>年</Text>
+      </View>
 
-        <TextInput
-          ref={monthInputRef}
-          style={styles.dateInput}
-          value={month}
-          onChangeText={(text) => {
-            handleNumericInputChange(setMonth, text);
-            if (text.length === 2) {
-              dayInputRef.current?.focus();
-            }
-          }}
-          placeholder="MM"
-          keyboardType="number-pad"
-          maxLength={2}
-          placeholderTextColor={theme.subtext}
-        />
-        <Text style={styles.dateSeparator}>月</Text>
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>日付 *</Text>
+        <View style={styles.dateInputContainer}>
+          <TextInput
+            style={styles.dateInput}
+            value={year}
+            onChangeText={(text) => {
+              handleNumericInputChange(setYear, text);
+              if (text.length === 4) {
+                monthInputRef.current?.focus();
+              }
+            }}
+            placeholder="YYYY"
+            keyboardType="number-pad"
+            maxLength={4}
+            placeholderTextColor={theme.subtext}
+          />
+          <Text style={styles.dateSeparator}>年</Text>
 
-        <TextInput
-          ref={dayInputRef}
-          style={styles.dateInput}
-          value={day}
-          onChangeText={(text) => handleNumericInputChange(setDay, text)}
-          placeholder="DD"
-          keyboardType="number-pad"
-          maxLength={2}
-          placeholderTextColor={theme.subtext}
-        />
-        <Text style={styles.dateSeparator}>日</Text>
+          <TextInput
+            ref={monthInputRef}
+            style={styles.dateInput}
+            value={month}
+            onChangeText={(text) => {
+              handleNumericInputChange(setMonth, text);
+              if (text.length === 2) {
+                dayInputRef.current?.focus();
+              }
+            }}
+            placeholder="MM"
+            keyboardType="number-pad"
+            maxLength={2}
+            placeholderTextColor={theme.subtext}
+          />
+          <Text style={styles.dateSeparator}>月</Text>
+
+          <TextInput
+            ref={dayInputRef}
+            style={styles.dateInput}
+            value={day}
+            onChangeText={(text) => handleNumericInputChange(setDay, text)}
+            placeholder="DD"
+            keyboardType="number-pad"
+            maxLength={2}
+            placeholderTextColor={theme.subtext}
+          />
+          <Text style={styles.dateSeparator}>日</Text>
+        </View>
       </View>
       
-      <AutoCompleteInput
-        label="アーティスト名"
-        value={artistName}
-        onChangeText={(text) => {
-          setArtistName(text);
-          setArtistSuggestions(text ? allArtists.filter(name => name.toLowerCase().includes(text.toLowerCase())) : []);
-        }}
-        suggestions={artistSuggestions}
-        onSuggestionPress={(suggestion) => {
-          setArtistName(suggestion);
-          setArtistSuggestions([]);
-        }}
-      />
-      <AutoCompleteInput
-        label="会場名"
-        value={venueName}
-        onChangeText={(text) => {
-          setVenueName(text);
-          setVenueSuggestions(text ? allVenues.filter(name => name.toLowerCase().includes(text.toLowerCase())) : []);
-        }}
-        suggestions={venueSuggestions}
-        onSuggestionPress={(suggestion) => {
-          setVenueName(suggestion);
-          setVenueSuggestions([]);
-        }}
-      />
-      <AutoCompleteInput
-        label="タグ"
-        value={tags}
-        placeholder="カンマ区切りで入力"
-        onChangeText={(text) => {
-          setTags(text);
-          const currentTag = text.split(',').pop()?.trim() || '';
-          setTagSuggestions(currentTag ? allTags.filter(tag => tag.toLowerCase().includes(currentTag.toLowerCase())) : []);
-        }}
-        suggestions={tagSuggestions}
-        onSuggestionPress={(suggestion) => {
-          const tagParts = tags.split(',').map(t => t.trim());
-          tagParts[tagParts.length - 1] = suggestion;
-          setTags(tagParts.join(', '));
-          setTagSuggestions([]);
-        }}
-      />
+      <View style={styles.formGroup}>
+        <AutoCompleteInput
+          label="アーティスト名"
+          value={artistName}
+          onChangeText={(text) => {
+            setArtistName(text);
+            setArtistSuggestions(text ? allArtists.filter(name => name.toLowerCase().includes(text.toLowerCase())) : []);
+          }}
+          suggestions={artistSuggestions}
+          onSuggestionPress={(suggestion) => {
+            setArtistName(suggestion);
+            setArtistSuggestions([]);
+          }}
+        />
+      </View>
 
-      <Text style={styles.label}>評価</Text>
-      <StarRating rating={rating} onRate={setRating} size={32}/>
+      <View style={styles.formGroup}>
+        <AutoCompleteInput
+          label="会場名"
+          value={venueName}
+          onChangeText={(text) => {
+            setVenueName(text);
+            setVenueSuggestions(text ? allVenues.filter(name => name.toLowerCase().includes(text.toLowerCase())) : []);
+          }}
+          suggestions={venueSuggestions}
+          onSuggestionPress={(suggestion) => {
+            setVenueName(suggestion);
+            setVenueSuggestions([]);
+          }}
+        />
+      </View>
+      
+      <View style={styles.formGroup}>
+        <AutoCompleteInput
+          label="タグ"
+          value={tags}
+          placeholder="カンマ区切りで入力"
+          onChangeText={(text) => {
+            setTags(text);
+            const currentTag = text.split(',').pop()?.trim() || '';
+            setTagSuggestions(currentTag ? allTags.filter(tag => tag.toLowerCase().includes(currentTag.toLowerCase())) : []);
+          }}
+          suggestions={tagSuggestions}
+          onSuggestionPress={(suggestion) => {
+            const tagParts = tags.split(',').map(t => t.trim());
+            tagParts[tagParts.length - 1] = suggestion;
+            setTags(tagParts.join(', '));
+            setTagSuggestions([]);
+          }}
+        />
+      </View>
 
-      <Text style={styles.label}>感想メモ</Text>
-      <TextInput
-        style={[styles.input, styles.memoInput]}
-        value={memo}
-        onChangeText={setMemo}
-        placeholder="ライブの感想などを記録できます"
-        placeholderTextColor={theme.subtext}
-        multiline={true}
-        numberOfLines={4}
-      />
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>評価</Text>
+        <StarRating rating={rating} onRate={setRating} size={32} />
+      </View>
+      
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>感想メモ</Text>
+        <TextInput
+          style={[styles.input, styles.memoInput]}
+          value={memo}
+          onChangeText={setMemo}
+          placeholder="ライブの感想などを記録できます"
+          placeholderTextColor={theme.subtext}
+          multiline={true}
+          numberOfLines={4}
+        />
+      </View>
 
       <Button 
         title={initialData ? "更新する" : "ライブ情報を保存"} 
@@ -363,6 +379,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   inputWrapper: {
     marginBottom: tokens.spacing.xxl,
+  },
+  formGroup: {
+    marginBottom: tokens.spacing.xs,
   },
   label: {
     fontSize: 16,
