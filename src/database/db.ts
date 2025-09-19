@@ -92,67 +92,11 @@ export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunR
 };
 
 /**
- * 保存されているライブ情報を取得する（検索・フィルター機能付き）
- * @param options 検索とフィルターのオプション
- * @returns Promise<Live[]>
+ *  すべてのライブ情報を取得する
+ *  フィルタリングとソートのオプションを指定可能
+ * @param filterSortOptions フィルタリングとソートのオプション
+ * @returns 
  */
-// export const getLives = async (options: {
-//   searchQuery?: string;
-//   artistFilter?: string;
-//   yearFilter?: string;
-// }): Promise<Live[]> => {
-//   let query = 'SELECT id, liveName, liveDate, venueName, artistName, imagePath, tags, rating, memo FROM lives';
-//   const conditions: string[] = [];
-//   const params: string[] = [];
-
-//   // 検索クエリによる絞り込み
-//   if (options.searchQuery && options.searchQuery.trim() !== '') {
-//     conditions.push('(liveName LIKE ? OR artistName LIKE ? OR venueName LIKE ? OR tags LIKE ?)');
-//     const fuzzyQuery = `%${options.searchQuery.trim()}%`;
-//     params.push(fuzzyQuery, fuzzyQuery, fuzzyQuery, fuzzyQuery);
-//   }
-
-//   // アーティスト名による絞り込み
-//   if (options.artistFilter && options.artistFilter.trim() !== '') {
-//     conditions.push('artistName = ?');
-//     params.push(options.artistFilter.trim());
-//   }
-  
-//   // 年による絞り込み
-//   if (options.yearFilter && options.yearFilter.trim() !== '') {
-//     conditions.push("strftime('%Y', liveDate) = ?");
-//     params.push(options.yearFilter.trim());
-//   }
-
-//   if (conditions.length > 0) {
-//     query += ' WHERE ' + conditions.join(' AND ');
-//   }
-
-//   query += ' ORDER BY liveDate DESC;';
-
-//   const lives = await db.getAllAsync<Live>(query, ...params);
-
-//   // 並び替え条件の構築
-//   if (filterSortOptions && filterSortOptions.sortKey) {
-//             // sortKeyが安全な値かチェック
-//             const validSortKeys = ['liveDate', 'artistName', 'rating', 'venueName'];
-//             if (validSortKeys.includes(filterSortOptions.sortKey)) {
-//                 const order = filterSortOptions.sortOrder === 'ASC' ? 'ASC' : 'DESC';
-//                 query += ` ORDER BY ${filterSortOptions.sortKey} ${order}`;
-//             }
-//         } else {
-//             // デフォルトの並べ替え順
-//             query += ` ORDER BY liveDate DESC`;
-//         }
-  
-//   if (lives.length > 0) {
-//     console.log("--- getLives: データベースから取得した最初のライブデータ ---");
-//     console.log(lives[0]);
-//     console.log("--------------------------------------------------");
-//   }
-  
-//   return lives;
-// };
 export const getLives = async ({ filterSortOptions }: GetLivesParams): Promise<Live[]> => {
     let query = `SELECT * FROM lives`;
     const params: (string | number)[] = [];
@@ -179,6 +123,12 @@ export const getLives = async ({ filterSortOptions }: GetLivesParams): Promise<L
         if (filterSortOptions.venue && filterSortOptions.venue.trim() !== '') {
             whereClauses.push(`venueName LIKE ?`);
             params.push(`%${filterSortOptions.venue.trim()}%`);
+        }
+        // タグによる絞り込み (部分一致)
+        if (filterSortOptions.tag && filterSortOptions.tag.trim() !== '') {
+            // カンマ区切りの文字列のいずれかに一致するかどうかをチェック
+            whereClauses.push(`(',' || tags || ',' LIKE ?)`);
+            params.push(`%,${filterSortOptions.tag.trim()},%`);
         }
     }
 
@@ -356,18 +306,25 @@ export const getDistinctArtists = async (): Promise<string[]> => {
 };
 
 /**
- * 登録されているすべてのユニークなタグを取得する
+ * @function getDistinctTags
+ * @description 登録されている全てのユニークなタグを取得する
+ * @returns {Promise<string[]>}
  */
 export const getDistinctTags = async (): Promise<string[]> => {
-  const result = await db.getAllAsync<{ tags: string }>('SELECT tags FROM lives WHERE tags IS NOT NULL AND tags != "";');
-  const allTags = new Set<string>();
-  result.forEach(row => {
-    row.tags.split(',').forEach(tag => {
-      const trimmed = tag.trim();
-      if (trimmed) allTags.add(trimmed);
+  try {
+    const result = await db.getAllAsync<{ tags: string }>('SELECT tags FROM lives WHERE tags IS NOT NULL AND tags != "";');
+    const allTags = new Set<string>();
+    result.forEach(row => {
+      row.tags.split(',').forEach(tag => {
+        const trimmed = tag.trim();
+        if (trimmed) allTags.add(trimmed);
+      });
     });
-  });
-  return Array.from(allTags);
+    return Array.from(allTags).sort();
+  } catch (error) {
+    console.error("Failed to get distinct tags", error);
+    return [];
+  }
 };
 
 /**

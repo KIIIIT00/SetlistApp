@@ -17,6 +17,7 @@ const initialFilterSortOptions: FilterSortOptions = {
     artist: '',
     venue: '',
     year: '',
+    tag:'',
     minRating: 0,
     sortKey: 'liveDate',
     sortOrder: 'DESC',
@@ -137,7 +138,6 @@ export const LiveListScreen = () => {
   const handleRemoveFilter = (keyToRemove: keyof FilterSortOptions) => {
         setFilterSortOptions(prev => ({
             ...prev,
-            // 指定されたキーの値を初期状態に戻す
             [keyToRemove]: initialFilterSortOptions[keyToRemove],
         }));
     };
@@ -164,7 +164,6 @@ export const LiveListScreen = () => {
         </View>
       ),
       headerRight: () => (
-        // <Button onPress={() => navigation.navigate('AddLive', {})} title="新規追加" />
         <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.filterButton}>
           <Ionicons name="options-outline" size={24} color={theme.primary} />
         </TouchableOpacity>
@@ -259,7 +258,7 @@ export const LiveListScreen = () => {
       ) : lives.length === 0 ? (
         <EmptyState
           onAddNewLive={() => navigation.navigate('AddLive', {})}
-          isFiltering={filterSortOptions.minRating > 0 || !!filterSortOptions.artist || !!filterSortOptions.venue || !!filterSortOptions.year}
+          isFiltering={filterSortOptions.minRating > 0 || !!filterSortOptions.artist || !!filterSortOptions.venue || !!filterSortOptions.year || !!filterSortOptions.tag}
         />
       ) : (
         <FlatList

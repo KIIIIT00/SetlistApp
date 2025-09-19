@@ -10,6 +10,7 @@ export type FilterSortOptions = {
   artist: string;
   venue: string;
   year: string;
+  tag: string;
   minRating: number;
   sortKey: 'liveDate' | 'artistName' | 'rating' | 'venueName';
   sortOrder: 'DESC' | 'ASC';
@@ -83,7 +84,6 @@ export const FilterModal = ({ visible, onClose, onApply, initialOptions, artistS
             value={options.venue}
             onChangeText={(text) => setOptions(prev=> ({...prev, venue: text}))}
             />
-
             <TextInput
               style={styles.input}
               placeholder="年で絞り込み (例: 2025)"
@@ -93,6 +93,14 @@ export const FilterModal = ({ visible, onClose, onApply, initialOptions, artistS
               keyboardType="number-pad"
               maxLength={4}
             />
+            <TextInput
+              style={styles.input}
+              placeholder="タグで絞り込み (例: フェス)"
+              placeholderTextColor={theme.subtext}
+              value={options.tag}
+              onChangeText={(text) => setOptions(prev => ({...prev, tag: text}))}
+            />
+
             <Text style={styles.sectionTitle}>評価</Text>
             <View style={styles.ratingContainer}>
             <StarRating rating={options.minRating} onRate={(r) => setOptions(prev => ({...prev, minRating: r}))} size={36} />

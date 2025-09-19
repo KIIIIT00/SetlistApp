@@ -25,6 +25,7 @@ export const ActiveFilters = ({ options, onRemove}: Props ) => {
     if (options.year) activeFilters.push({ key: 'year', value: `${options.year}年`});
     if (options.artist) activeFilters.push({ key: 'artist', value: options.artist});
     if (options.venue) activeFilters.push({ key: 'venue', value: options.venue});
+    if (options.tag) activeFilters.push({ key: 'tag', value: `タグ: ${options.tag}` });
     if (options.minRating > 0) activeFilters.push({ key: 'minRating', value: `評価 ★${options.minRating}以上` });
 
     // 並び替え順も表示
