@@ -10,8 +10,9 @@ import { StarRating } from '../components/StarRating';
 import { useTheme } from '../context/ThemeContext';
 import { tokens, AppTheme } from '../theme';
 import { FilterModal, FilterSortOptions } from '../components/FilterModal';
+import { ActiveFilters } from '../components/ActiveFilters';
 
-// ★ フィルターとソートの初期状態を定義
+
 const initialFilterSortOptions: FilterSortOptions = {
     artist: '',
     venue: '',
@@ -131,6 +132,14 @@ export const LiveListScreen = () => {
   const fabStyle = {
         opacity: fabAnimation,
         transform: [{ scale: fabAnimation }],
+  };
+
+  const handleRemoveFilter = (keyToRemove: keyof FilterSortOptions) => {
+        setFilterSortOptions(prev => ({
+            ...prev,
+            // 指定されたキーの値を初期状態に戻す
+            [keyToRemove]: initialFilterSortOptions[keyToRemove],
+        }));
     };
   
   useLayoutEffect(() => {
@@ -244,6 +253,7 @@ export const LiveListScreen = () => {
 
   return (
     <View style={styles.container}>
+      <ActiveFilters options={filterSortOptions} onRemove={handleRemoveFilter} />
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 20 }} />
       ) : lives.length === 0 ? (
