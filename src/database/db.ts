@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { FilterSortOptions } from '../components/FilterModal';
 
 // --- 型定義 ---
 export interface Live {
@@ -21,6 +22,10 @@ export interface Setlist {
   memo?: string;
   type: 'song' | 'header';
 }
+
+type GetLivesParams = {
+    filterSortOptions?: FilterSortOptions;
+};
 
 const db = SQLite.openDatabaseSync('setlist_v2.db');
 
@@ -85,55 +90,130 @@ export const addLive = async (live: Omit<Live, 'id'>): Promise<SQLite.SQLiteRunR
     live.memo || null
   );
 };
+
 /**
  * 保存されているライブ情報を取得する（検索・フィルター機能付き）
  * @param options 検索とフィルターのオプション
  * @returns Promise<Live[]>
  */
-export const getLives = async (options: {
-  searchQuery?: string;
-  artistFilter?: string;
-  yearFilter?: string;
-}): Promise<Live[]> => {
-  let query = 'SELECT id, liveName, liveDate, venueName, artistName, imagePath, tags, rating, memo FROM lives';
-  const conditions: string[] = [];
-  const params: string[] = [];
+// export const getLives = async (options: {
+//   searchQuery?: string;
+//   artistFilter?: string;
+//   yearFilter?: string;
+// }): Promise<Live[]> => {
+//   let query = 'SELECT id, liveName, liveDate, venueName, artistName, imagePath, tags, rating, memo FROM lives';
+//   const conditions: string[] = [];
+//   const params: string[] = [];
 
-  // 検索クエリによる絞り込み
-  if (options.searchQuery && options.searchQuery.trim() !== '') {
-    conditions.push('(liveName LIKE ? OR artistName LIKE ? OR venueName LIKE ? OR tags LIKE ?)');
-    const fuzzyQuery = `%${options.searchQuery.trim()}%`;
-    params.push(fuzzyQuery, fuzzyQuery, fuzzyQuery, fuzzyQuery);
-  }
+//   // 検索クエリによる絞り込み
+//   if (options.searchQuery && options.searchQuery.trim() !== '') {
+//     conditions.push('(liveName LIKE ? OR artistName LIKE ? OR venueName LIKE ? OR tags LIKE ?)');
+//     const fuzzyQuery = `%${options.searchQuery.trim()}%`;
+//     params.push(fuzzyQuery, fuzzyQuery, fuzzyQuery, fuzzyQuery);
+//   }
 
-  // アーティスト名による絞り込み
-  if (options.artistFilter && options.artistFilter.trim() !== '') {
-    conditions.push('artistName = ?');
-    params.push(options.artistFilter.trim());
-  }
+//   // アーティスト名による絞り込み
+//   if (options.artistFilter && options.artistFilter.trim() !== '') {
+//     conditions.push('artistName = ?');
+//     params.push(options.artistFilter.trim());
+//   }
   
-  // 年による絞り込み
-  if (options.yearFilter && options.yearFilter.trim() !== '') {
-    conditions.push("strftime('%Y', liveDate) = ?");
-    params.push(options.yearFilter.trim());
-  }
+//   // 年による絞り込み
+//   if (options.yearFilter && options.yearFilter.trim() !== '') {
+//     conditions.push("strftime('%Y', liveDate) = ?");
+//     params.push(options.yearFilter.trim());
+//   }
 
-  if (conditions.length > 0) {
-    query += ' WHERE ' + conditions.join(' AND ');
-  }
+//   if (conditions.length > 0) {
+//     query += ' WHERE ' + conditions.join(' AND ');
+//   }
 
-  query += ' ORDER BY liveDate DESC;';
+//   query += ' ORDER BY liveDate DESC;';
 
-  const lives = await db.getAllAsync<Live>(query, ...params);
+//   const lives = await db.getAllAsync<Live>(query, ...params);
+
+//   // 並び替え条件の構築
+//   if (filterSortOptions && filterSortOptions.sortKey) {
+//             // sortKeyが安全な値かチェック
+//             const validSortKeys = ['liveDate', 'artistName', 'rating', 'venueName'];
+//             if (validSortKeys.includes(filterSortOptions.sortKey)) {
+//                 const order = filterSortOptions.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+//                 query += ` ORDER BY ${filterSortOptions.sortKey} ${order}`;
+//             }
+//         } else {
+//             // デフォルトの並べ替え順
+//             query += ` ORDER BY liveDate DESC`;
+//         }
   
-  if (lives.length > 0) {
-    console.log("--- getLives: データベースから取得した最初のライブデータ ---");
-    console.log(lives[0]);
-    console.log("--------------------------------------------------");
-  }
+//   if (lives.length > 0) {
+//     console.log("--- getLives: データベースから取得した最初のライブデータ ---");
+//     console.log(lives[0]);
+//     console.log("--------------------------------------------------");
+//   }
   
-  return lives;
+//   return lives;
+// };
+export const getLives = async ({ filterSortOptions }: GetLivesParams): Promise<Live[]> => {
+    let query = `SELECT * FROM lives`;
+    const params: (string | number)[] = [];
+
+    const whereClauses: string[] = [];
+
+    if (filterSortOptions) {
+        // 評価による絞り込み
+        if (filterSortOptions.minRating && filterSortOptions.minRating > 0) {
+            whereClauses.push(`rating >= ?`);
+            params.push(filterSortOptions.minRating);
+        }
+        // アーティスト名による絞り込み (部分一致)
+        if (filterSortOptions.artist && filterSortOptions.artist.trim() !== '') {
+            whereClauses.push(`artistName LIKE ?`);
+            params.push(`%${filterSortOptions.artist.trim()}%`);
+        }
+        // 年による絞り込み (完全一致、4桁)
+        if (filterSortOptions.year && filterSortOptions.year.trim().length === 4) {
+            whereClauses.push(`strftime('%Y', liveDate) = ?`);
+            params.push(filterSortOptions.year.trim());
+        }
+        // 会場名による絞り込み (部分一致)
+        if (filterSortOptions.venue && filterSortOptions.venue.trim() !== '') {
+            whereClauses.push(`venueName LIKE ?`);
+            params.push(`%${filterSortOptions.venue.trim()}%`);
+        }
+    }
+
+    if (whereClauses.length > 0) {
+        query += ` WHERE ` + whereClauses.join(' AND ');
+    }
+
+    // --- 並べ替え条件の構築 (ORDER BY句) ---
+    if (filterSortOptions && filterSortOptions.sortKey) {
+        // sortKeyが安全な値かチェック
+        const validSortKeys = ['liveDate', 'artistName', 'rating', 'venueName'];
+        if (validSortKeys.includes(filterSortOptions.sortKey)) {
+            const order = filterSortOptions.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+            // 日本語の並べ替えに対応するためCOLLATE NOCASEを使用
+            const sortColumn = filterSortOptions.sortKey === 'artistName' || filterSortOptions.sortKey === 'venueName'
+                ? `${filterSortOptions.sortKey} COLLATE NOCASE`
+                : filterSortOptions.sortKey;
+            
+            query += ` ORDER BY ${sortColumn} ${order}`;
+        }
+    } else {
+        // デフォルトの並べ替え順
+        query += ` ORDER BY liveDate DESC`;
+    }
+
+    // --- クエリ実行 ---
+    try {
+        const result = await db.getAllAsync<Live>(query, params);
+        return result;
+    } catch (error) {
+        console.error("Failed to get lives from DB", error);
+        throw error; // エラーを呼び出し元に伝える
+    }
 };
+
 /**
  * IDを指定して単一のライブ情報を取得する
  * @param id 取得するライブのID
@@ -242,19 +322,37 @@ export const getAllDataForExport = async () => {
 };
 
 /**
- * 登録されているすべてのユニークな会場名を取得する
+ * @function getDistinctVenues
+ * @description 登録されている全てのユニークな会場名を取得する
+ * @returns {Promise<string[]>}
  */
 export const getDistinctVenues = async (): Promise<string[]> => {
-  const result = await db.getAllAsync<{ venueName: string}>('SELECT DISTINCT venueName FROM lives WHERE venueName IS NOT NULL AND venueName != "";');
-  return result.map(item => item.venueName);
+    try {
+        const result = await db.getAllAsync<{ venueName: string }>(
+            `SELECT DISTINCT venueName FROM lives WHERE venueName IS NOT NULL AND venueName != '' ORDER BY venueName COLLATE NOCASE ASC`
+        );
+        return result.map(item => item.venueName);
+    } catch (error) {
+        console.error("Failed to get distinct venues", error);
+        return [];
+    }
 };
 
 /**
- * 登録されているすべてのユニークなアーティスト名を取得する
+ * @function getDistinctArtists
+ * @description 登録されている全てのユニークなアーティスト名を取得する
+ * @returns {Promise<string[]>}
  */
 export const getDistinctArtists = async (): Promise<string[]> => {
-  const result = await db.getAllAsync<{ artistName: string }>('SELECT DISTINCT artistName FROM lives WHERE artistName IS NOT NULL AND artistName != "";');
-  return result.map(item => item.artistName);
+    try {
+        const result = await db.getAllAsync<{ artistName: string }>(
+            `SELECT DISTINCT artistName FROM lives WHERE artistName IS NOT NULL AND artistName != '' ORDER BY artistName COLLATE NOCASE ASC`
+        );
+        return result.map(item => item.artistName);
+    } catch (error) {
+        console.error("Failed to get distinct artists", error);
+        return [];
+    }
 };
 
 /**

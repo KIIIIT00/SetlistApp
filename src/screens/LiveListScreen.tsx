@@ -4,11 +4,22 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { getLives, Live, deleteLive } from '../database/db';
+import { getLives, Live, deleteLive, getDistinctArtists, getDistinctVenues } from '../database/db';
 import { RootStackParamList } from '../../App';
 import { StarRating } from '../components/StarRating';
 import { useTheme } from '../context/ThemeContext';
 import { tokens, AppTheme } from '../theme';
+import { FilterModal, FilterSortOptions } from '../components/FilterModal';
+
+// ★ フィルターとソートの初期状態を定義
+const initialFilterSortOptions: FilterSortOptions = {
+    artist: '',
+    venue: '',
+    year: '',
+    minRating: 0,
+    sortKey: 'liveDate',
+    sortOrder: 'DESC',
+};
 
 const AnimatedCard = ({ item, index, children }: { item: Live, index: number, children: React.ReactNode }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current; 
@@ -55,6 +66,15 @@ export const LiveListScreen = () => {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  const [filterSortOptions, setFilterSortOptions] = useState(initialFilterSortOptions);
+  const [isModalVisible, setModalVisible] = useState(false);
+
+  const [allArtists, setAllArtists] = useState<string[]>([]);
+  const [allVenues, setAllVenues] = useState<string[]>([]);
+
+  // FABアニメーション用
+  const fabAnimation = useRef(new Animated.Value(1)).current;
+  const isFabVisible = useRef(true);
   const EmptyState = ({ onAddNewLive, isFiltering }: { onAddNewLive: () => void; isFiltering: boolean }) => {
 
   if (isFiltering) {
@@ -71,7 +91,7 @@ export const LiveListScreen = () => {
     <View style={styles.emptyContainer}>
       <Ionicons name="musical-notes-outline" size={80} color={theme.emptyText} />
       <Text style={styles.emptyTitle}>最初のライブを記録しましょう</Text>
-      <Text style={styles.emptySubtitle}>右上の「新規追加」ボタン、または下のボタンからライブ情報を簡単に追加できます。</Text>
+      <Text style={styles.emptySubtitle}>右下の「＋」ボタン、または下のボタンからライブ情報を簡単に追加できます。</Text>
       <TouchableOpacity style={styles.emptyButton} onPress={onAddNewLive}>
         <Text style={styles.emptyButtonText}>ライブ情報を追加する</Text>
       </TouchableOpacity>
@@ -82,7 +102,8 @@ export const LiveListScreen = () => {
   const loadLives = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await getLives({ searchQuery, artistFilter, yearFilter });
+      // const data = await getLives({ searchQuery, artistFilter, yearFilter });
+      const data = await getLives({ filterSortOptions }); 
       setLives(data);
       
       if (data.length > 0) {
@@ -94,13 +115,23 @@ export const LiveListScreen = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, artistFilter, yearFilter]);
+  }, [filterSortOptions]);
 
   useFocusEffect(
     useCallback(() => {
       loadLives();
+      const loadSuggestions = async () => {
+        setAllArtists(await getDistinctArtists());
+        setAllVenues(await getDistinctVenues());
+      };
+      loadSuggestions();
     }, [loadLives])
   );
+  
+  const fabStyle = {
+        opacity: fabAnimation,
+        transform: [{ scale: fabAnimation }],
+    };
   
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -123,7 +154,12 @@ export const LiveListScreen = () => {
           </TouchableOpacity>
         </View>
       ),
-      headerRight: () => <Button onPress={() => navigation.navigate('AddLive', {})} title="新規追加" />,
+      headerRight: () => (
+        // <Button onPress={() => navigation.navigate('AddLive', {})} title="新規追加" />
+        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.filterButton}>
+          <Ionicons name="options-outline" size={24} color={theme.primary} />
+        </TouchableOpacity>
+      ),
     });
   }, [navigation, theme]);
 
@@ -143,6 +179,17 @@ export const LiveListScreen = () => {
         },
       ]
     );
+  };
+
+  const onScroll = (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+      const scrollY = event.nativeEvent.contentOffset.y;
+      if (scrollY > 50 && isFabVisible.current) {
+          isFabVisible.current = false;
+          Animated.timing(fabAnimation, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      } else if (scrollY <= 50 && !isFabVisible.current) {
+          isFabVisible.current = true;
+          Animated.timing(fabAnimation, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      }
   };
   
   const renderRightActions = (liveId: number) => (
@@ -197,42 +244,12 @@ export const LiveListScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="キーワードで検索..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          clearButtonMode="while-editing"
-          placeholderTextColor={theme.subtext}
-        />
-        <View style={styles.filterRow}>
-          <TextInput
-            style={[styles.searchInput, styles.filterInput]}
-            placeholder="アーティスト名で絞り込み"
-            value={artistFilter}
-            onChangeText={setArtistFilter}
-            clearButtonMode="while-editing"
-            placeholderTextColor={theme.subtext}
-          />
-          <TextInput
-            style={[styles.searchInput, styles.filterInput, { flex: 0.5 }]}
-            placeholder="年 (例: 2025)"
-            value={yearFilter}
-            onChangeText={setYearFilter}
-            keyboardType="number-pad"
-            clearButtonMode="while-editing"
-            placeholderTextColor={theme.subtext}
-          />
-        </View>
-      </View>
-
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 20 }} />
       ) : lives.length === 0 ? (
-        <EmptyState 
-            onAddNewLive={() => navigation.navigate('AddLive', {})}
-            isFiltering={!!searchQuery || !!artistFilter || !!yearFilter} 
+        <EmptyState
+          onAddNewLive={() => navigation.navigate('AddLive', {})}
+          isFiltering={filterSortOptions.minRating > 0 || !!filterSortOptions.artist || !!filterSortOptions.venue || !!filterSortOptions.year}
         />
       ) : (
         <FlatList
@@ -242,6 +259,20 @@ export const LiveListScreen = () => {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
+      <Animated.View style={[styles.fabContainer, fabStyle]}>
+        <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('AddLive', {})}>
+            <Ionicons name="add" size={32} color={theme.buttonSelectedText} />
+        </TouchableOpacity>
+      </Animated.View>
+
+      <FilterModal
+          visible={isModalVisible}
+          onClose={() => setModalVisible(false)}
+          onApply={(options) => setFilterSortOptions(options)}
+          initialOptions={filterSortOptions}
+          artistSuggestions={allArtists}
+          venueSuggestions={allVenues}
+      />
     </View>
   );
 };
@@ -369,4 +400,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         color: theme.buttonSelectedText,
         fontWeight: 'bold',
     },
+    filterButton: {
+      paddingHorizontal: tokens.spacing.m
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: 30,
+      right: 30
+    },
+    fab: {
+      backgroundColor: theme.primary,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+      elevation: 5,
+    }
 });
