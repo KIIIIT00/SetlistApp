@@ -16,6 +16,7 @@ import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ViewShot from 'react-native-view-shot';
+import * as Haptics from 'expo-haptics';
 import { getLiveById, getSetlistsForLive, Live, Setlist, duplicateLiveById, deleteLive } from '../database/db';
 import { RootStackParamList } from '../../App';
 import { StarRating } from '../components/StarRating';
@@ -72,6 +73,7 @@ export const LiveDetailScreen = () => {
           onPress: async () => {
             const success = await deleteLive(liveId);
             if (success) {
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               navigation.goBack();
             } else {
                 Alert.alert("エラー", "削除に失敗しました。");
