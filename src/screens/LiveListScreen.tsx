@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useLayoutEffect, useEffect, useRef, useMemo, use } from 'react';
+import React, { useCallback, useState, useLayoutEffect, useEffect, useRef, useMemo, use, Children } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, TextInput, Alert, ActivityIndicator, Animated } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,6 +9,38 @@ import { RootStackParamList } from '../../App';
 import { StarRating } from '../components/StarRating';
 import { useTheme } from '../context/ThemeContext';
 import { tokens, AppTheme } from '../theme';
+
+const AnimatedCard = ({ item, index, children }: { item: Live, index: number, children: React.ReactNode }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current; 
+  const translateYAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1, 
+      duration: 500,
+      delay: index * 100,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.timing(translateYAnim, {
+        toValue: 0,
+        duration: 500,
+        delay: index * 100,
+        useNativeDriver: true,
+    }).start();
+  }, [fadeAnim, translateYAnim, index]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: translateYAnim }], 
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+};
 
 export const LiveListScreen = () => {
   const [lives, setLives] = useState<Live[]>([]);
@@ -124,41 +156,43 @@ export const LiveListScreen = () => {
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   };
 
-  const renderItem = ({ item }: { item: Live }) => (
-    <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-      <TouchableOpacity
-        style={styles.itemContainer}
-        onPress={() => navigation.navigate('LiveDetail', { liveId: item.id })}
-      >
-        <View style={styles.infoContainer}>
-          <Text style={styles.itemTitle}>{item.liveName}</Text>
-          <View style={styles.detailRow}>
-            <MaterialCommunityIcons name="account-music" size={16} color={theme.icon} />
-            <Text style={styles.itemSubtitle}>{item.artistName || 'アーティスト未登録'}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="location-sharp" size={16} color={theme.icon} />
-            <Text style={styles.itemDetail}>{item.venueName || '会場未登録'}</Text>
-          </View>
-           <View style={styles.detailRow}>
-            <Ionicons name="calendar" size={16} color={theme.icon} />
-            <Text style={styles.itemDetail}>{formatDateForList(item.liveDate)}</Text>
-          </View>
-          <View style={{ marginBottom: 4 }}>
-            <StarRating rating={item.rating} />
-          </View>
-          {item.tags && (
-            <View style={styles.tagsContainer}>
-              {item.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
-                <View key={tag} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
-                </View>
-              ))}
+  const renderItem = ({ item, index }: { item: Live, index: number }) => (
+    <AnimatedCard item={item} index={index}>
+      <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+        <TouchableOpacity
+          style={styles.itemContainer}
+          onPress={() => navigation.navigate('LiveDetail', { liveId: item.id })}
+        >
+          <View style={styles.infoContainer}>
+            <Text style={styles.itemTitle}>{item.liveName}</Text>
+            <View style={styles.detailRow}>
+              <MaterialCommunityIcons name="account-music" size={16} color={theme.icon} />
+              <Text style={styles.itemSubtitle}>{item.artistName || 'アーティスト未登録'}</Text>
             </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    </Swipeable>
+            <View style={styles.detailRow}>
+              <Ionicons name="location-sharp" size={16} color={theme.icon} />
+              <Text style={styles.itemDetail}>{item.venueName || '会場未登録'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="calendar" size={16} color={theme.icon} />
+              <Text style={styles.itemDetail}>{formatDateForList(item.liveDate)}</Text>
+            </View>
+            <View style={{ marginBottom: 4 }}>
+              <StarRating rating={item.rating} />
+            </View>
+            {item.tags && (
+              <View style={styles.tagsContainer}>
+                {item.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
+                  <View key={tag} style={styles.tag}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Swipeable>
+    </AnimatedCard>
   );
 
   return (
