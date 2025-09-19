@@ -30,7 +30,7 @@ export const ActiveFilters = ({ options, onRemove}: Props ) => {
 
     // 並び替え順も表示
     const sortLabel = `${sortKeyLabels[options.sortKey]}の${options.sortOrder === 'DESC' ? '降順' : '昇順'}`;
-  　activeFilters.push({ key: 'sortKey', value: sortLabel });
+    activeFilters.push({ key: 'sortKey', value: sortLabel });
 
   if (activeFilters.length <= 1 && activeFilters[0]?.key === 'sortKey') {
     return null;
