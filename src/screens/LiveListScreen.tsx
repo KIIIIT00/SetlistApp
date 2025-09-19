@@ -1,5 +1,5 @@
-import React, { useCallback, useState, useLayoutEffect, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState, useLayoutEffect, useEffect, useRef, useMemo, use } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, TextInput, Alert, ActivityIndicator, Animated } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -22,6 +22,30 @@ export const LiveListScreen = () => {
 
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const EmptyState = ({ onAddNewLive, isFiltering }: { onAddNewLive: () => void; isFiltering: boolean }) => {
+
+  if (isFiltering) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="search-outline" size={60} color={theme.emptyText} />
+        <Text style={styles.emptyTitle}>結果がありません</Text>
+        <Text style={styles.emptySubtitle}>検索または絞り込みの条件に一致するライブ記録は見つかりませんでした。</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="musical-notes-outline" size={80} color={theme.emptyText} />
+      <Text style={styles.emptyTitle}>最初のライブを記録しましょう</Text>
+      <Text style={styles.emptySubtitle}>右上の「新規追加」ボタン、または下のボタンからライブ情報を簡単に追加できます。</Text>
+      <TouchableOpacity style={styles.emptyButton} onPress={onAddNewLive}>
+        <Text style={styles.emptyButtonText}>ライブ情報を追加する</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
   const loadLives = useCallback(async () => {
     try {
@@ -172,11 +196,10 @@ export const LiveListScreen = () => {
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 20 }} />
       ) : lives.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {searchQuery || artistFilter || yearFilter ? '検索・絞り込み結果がありません' : 'まだライブが登録されていません。'}
-          </Text>
-        </View>
+        <EmptyState 
+            onAddNewLive={() => navigation.navigate('AddLive', {})}
+            isFiltering={!!searchQuery || !!artistFilter || !!yearFilter} 
+        />
       ) : (
         <FlatList
           data={lives}
@@ -274,15 +297,42 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         color: theme.buttonSelectedText, 
         fontWeight: 'bold' 
     },
-    emptyContainer: { 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        paddingHorizontal: tokens.spacing.xxl
-    },
     emptyText: { 
         fontSize: 18, 
         color: theme.emptyText, 
         textAlign: 'center' 
+    },
+    emptyContainer: { 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        paddingHorizontal: tokens.spacing.xxl,
+        backgroundColor: theme.background, // 背景色を明示
+    },
+    emptyTitle: {
+        ...tokens.typography.title,
+        color: theme.text,
+        textAlign: 'center',
+        marginTop: tokens.spacing.xl,
+    },
+    emptySubtitle: {
+        ...tokens.typography.body,
+        fontSize: 15,
+        color: theme.subtext,
+        textAlign: 'center',
+        marginTop: tokens.spacing.s,
+        lineHeight: 22,
+    },
+    emptyButton: {
+        marginTop: tokens.spacing.xxl,
+        backgroundColor: theme.primary,
+        paddingVertical: tokens.spacing.l,
+        paddingHorizontal: tokens.spacing.xxl,
+        borderRadius: 24,
+    },
+    emptyButtonText: {
+        ...tokens.typography.subtitle,
+        color: theme.buttonSelectedText,
+        fontWeight: 'bold',
     },
 });
