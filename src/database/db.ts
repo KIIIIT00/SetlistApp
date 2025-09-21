@@ -23,6 +23,17 @@ export interface Setlist {
   type: 'song' | 'header';
 }
 
+/**
+ * @typedef {object} SongStatItem
+ * @description 曲ごとの演奏回数
+ * @property {string} name - 曲名
+ * @property {number} count - 演奏回数
+ */
+export type SongStatItem = {
+  name: string;
+  count: number;
+};
+
 type GetLivesParams = {
     filterSortOptions?: FilterSortOptions;
 };
@@ -509,12 +520,17 @@ export type StatsSummary = {
  * @returns {Promise<StatsSummary>}
  */
 export const getStatsSummary = async (): Promise<StatsSummary> => {
-    const result = await db.getFirstAsync<{ total: number, avg_rating: number }>(
-        `SELECT COUNT(id) as total, AVG(rating) as avg_rating FROM lives WHERE rating > 0;`
+    const totalResult = await db.getFirstAsync<{ total: number }>(
+        `SELECT COUNT(id) as total FROM lives;`
     );
+
+    const ratingResult = await db.getFirstAsync<{ avg_rating: number }> (
+        `SELECT AVG(rating) as avg_rating FROM lives WHERE rating > 0;`
+    );
+
     return {
-        totalLives: result?.total || 0,
-        averageRating: parseFloat(result?.avg_rating?.toFixed(1) || '0.0')
+        totalLives: totalResult?.total || 0,
+        averageRating: parseFloat(ratingResult?.avg_rating?.toFixed(1) || '0.0')
     };
 };
 
@@ -542,4 +558,62 @@ export const getYearlyActivity = async (): Promise<YearlyActivity[]> => {
         ORDER BY year DESC;
     `;
     return await db.getAllAsync<YearlyActivity>(query);
+};
+
+/**
+ * @typedef {object} MonthlyActivity
+ * @description 指定された年の月別ライブ参加記録
+ * @property {string} month - 月 (e.g., "01", "02")
+ * @property {number} count - その月の参加回数
+ */
+export type MonthlyActivity = {
+    month: string;
+    count: number;
+};
+
+/**
+ * @function getMonthlyActivity
+ * @description 指定された年の月別参加数を取得する
+ * @param {string} year - 取得したい年 (e.g., "2025")
+ * @returns {Promise<MonthlyActivity[]>}
+ */
+export const getMonthlyActivity = async (year: string): Promise<MonthlyActivity[]> => {
+    try {
+        const query = `
+            SELECT strftime('%m', liveDate) as month, COUNT(id) as count
+            FROM lives
+            WHERE strftime('%Y', liveDate) = ?
+            GROUP BY month
+            ORDER BY month ASC;
+        `;
+        const result = await db.getAllAsync<MonthlyActivity>(query, [year]);
+        return result;
+    } catch (error) {
+        console.error(`Failed to get monthly activity for year ${year}`, error);
+        throw error;
+    }
+};
+
+/**
+ * @function getSongStatsForArtist
+ * @description 特定のアーティストの楽曲ごとの演奏回数を取得する
+ * @param {string} artistName - アーティスト名
+ * @returns {Promise<SongStatItem[]>}
+ */
+export const getSongStatsForArtist = async (artistName: string): Promise<SongStatItem[]> => {
+    try {
+        const query = `
+            SELECT s.songName as name, COUNT(s.id) as count
+            FROM setlists s
+            JOIN lives l ON s.liveId = l.id
+            WHERE l.artistName = ? AND s.type = 'song' AND s.songName IS NOT NULL AND s.songName != ''
+            GROUP BY s.songName
+            ORDER BY count DESC, name ASC;
+        `;
+        const results = await db.getAllAsync<SongStatItem>(query, [artistName]);
+        return results;
+    } catch (error) {
+        console.error(`Failed to get song stats for artist ${artistName}`, error);
+        throw error;
+    }
 };

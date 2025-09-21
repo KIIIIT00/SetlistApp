@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   getArtistRankings,
   getVenueRankings,
@@ -11,12 +11,25 @@ import {
   StatsSummary,
   YearlyActivity,
 } from '../database/db';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { StatsCard } from '../components/StatsCard';
 import { RankingList } from '../components/RankingList';
 import { loadRankingLimit } from '../utils/setting';
 import { useTheme } from '../context/ThemeContext';
 import { tokens, AppTheme } from '../theme';
+
+export type RootStackParamList = {
+  LiveList: undefined;
+  AddLive: { liveId?: number };
+  LiveDetail: { liveId: number };
+  EditSetlist: { liveId: number; artistName?: string; };
+  Settings: undefined;
+  MemoDetail: {liveId: number};
+  Stats: undefined;
+  Graph: undefined;
+  Calendar: undefined;
+};
 
 export const StatsScreen = () => {
   const [summary, setSummary] = useState<StatsSummary | null>(null);
@@ -31,6 +44,8 @@ export const StatsScreen = () => {
 
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useFocusEffect(
     useCallback(() => {
@@ -74,6 +89,13 @@ export const StatsScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
+      <TouchableOpacity 
+          style={styles.graphButton}
+          onPress={() => navigation.navigate('Graph')}
+      >
+        <Ionicons name="bar-chart-outline" size={20} color={theme.primary} />
+        <Text style={styles.graphButtonText}>グラフで詳しく見る</Text>
+      </TouchableOpacity>
       <StatsCard title="あなたのライブ記録">
         <View style={styles.summaryContainer}>
           <View style={styles.summaryItem}>
@@ -152,4 +174,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         color: theme.emptyText,
         textAlign: 'center',
     },
+    graphButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.card,
+      padding: tokens.spacing.l,
+      margin: tokens.spacing.m,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.separator,
+    },
+    graphButtonText: {
+        color: theme.primary,
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: tokens.spacing.s,
+    }
 });

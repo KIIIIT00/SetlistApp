@@ -19,6 +19,8 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { MemoDetailScreen } from './src/screens/MemoDetailScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { CalendarScreen } from './src/screens/CalendarScreen';
+import { GraphScreen } from './src/screens/GraphScreen';
+import { ArtistSongScreen } from './src/screens/ArtistSongScreen';
 
 export type RootStackParamList = {
     LiveList: undefined;
@@ -29,6 +31,8 @@ export type RootStackParamList = {
     Settings: undefined;
     MemoDetail: {liveId: number};
     Stats: undefined;
+    Graph: undefined;
+    ArtistSongs: { artistName: string };
     Calendar: undefined;
 };
 
@@ -84,6 +88,16 @@ const AppNavigator = () => {
                 name="Stats" 
                 component={StatsScreen} 
                 options={{ title: '統計・分析' }} />
+                <Stack.Screen
+                    name="Graph"
+                    component={GraphScreen}
+                    options={{ title: 'グラフ分析' }}
+                />
+                <Stack.Screen
+                    name="ArtistSongs"
+                    component={ArtistSongScreen}
+                    options={({ route }) => ({ title: `${route.params.artistName}の楽曲分析` })}
+                />
                 <Stack.Screen 
                   name="Calendar" 
                   component={CalendarScreen} 

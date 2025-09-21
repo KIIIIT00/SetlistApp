@@ -59,32 +59,3 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: tokens.spacing.m,
   }
 });
-
-// const styles = StyleSheet.create({
-//   rankingItem: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     paddingVertical: 8,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#f0f0f0',
-//   },
-//   rankingRank: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//     color: '#888',
-//     width: 30,
-//   },
-//   rankingName: {
-//     fontSize: 16,
-//     flex: 1,
-//   },
-//   rankingCount: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-//   noDataText: {
-//     color: '#888',
-//     textAlign: 'center',
-//     paddingVertical: 10,
-//   },
-// });
