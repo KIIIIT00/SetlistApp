@@ -1,80 +1,105 @@
-import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, StyleSheet, Text, Dimensions, ActivityIndicator } from 'react-native';
 import { BarChart } from "react-native-gifted-charts";
+import { useFocusEffect } from '@react-navigation/native';
+import { getYearlyActivity, YearlyActivity } from '../database/db';
 import { useTheme } from '../context/ThemeContext';
 import { AppTheme, tokens } from '../theme';
 
-type ChartDataItem = {
-    value: number;
-    label: string;
-    topLabelComponent?: () => JSX.Element;
-};
-
+// --- ★★★ ここから修正 ★★★ ---
 type Props = {
-  data: { year: string; count: number }[];
-  onBarPress?: (year: string) => void;
-  selectedYear?: string | null;
+  onYearSelect: (year: string | null) => void;
 };
 
-export const YearlyActivityChart = ({ data, onBarPress, selectedYear }: Props) => {
+export const YearlyActivityChart = ({ onYearSelect }: Props) => {
+  const [activity, setActivity] = useState<YearlyActivity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  if (!data || data.length === 0) {
+  useFocusEffect(
+    useCallback(() => {
+        const loadData = async () => {
+            setIsLoading(true);
+            const data = await getYearlyActivity();
+            setActivity(data);
+            if (data.length > 0 && !selectedYear) {
+                const latestYear = data[0].year;
+                setSelectedYear(latestYear);
+                onYearSelect(latestYear);
+            }
+            setIsLoading(false);
+        };
+        loadData();
+    }, [])
+  );
+
+  const chartData = useMemo(() => {
+    return activity.map(item => ({
+        value: item.count,
+        label: item.year,
+        frontColor: item.year === selectedYear ? theme.primary : theme.subtext,
+    }));
+  }, [activity, selectedYear, theme]);
+  // --- ★★★ ここまで修正 ★★★ ---
+
+  if (isLoading) {
+    return <View style={styles.loadingContainer}><ActivityIndicator /></View>;
+  }
+
+  if (!activity || activity.length === 0) {
     return <Text style={styles.noDataText}>グラフを表示するデータがありません</Text>;
   }
 
-  // gifted-charts用のデータ形式に変換
-  const chartData: ChartDataItem[] = data.map(item => ({
-    value: item.count,
-    label: item.year,
-  }));
+  const screenWidth = Dimensions.get('window').width;
+  const chartWidth = screenWidth - (tokens.spacing.m * 4);
+  const numberOfBars = Math.max(chartData.length, 5);
+  const spacing = 20;
+  const barWidth = (chartWidth - (numberOfBars * spacing)) / numberOfBars;
+
+  const maxValue = Math.max(...chartData.map(d => d.value), 4);
+  const stepValue = Math.ceil(maxValue / 5) || 1;
 
   return (
     <View style={styles.container}>
       <BarChart
         data={chartData}
-        barWidth={40}
-        spacing={25}
+        width={chartWidth}
+        barWidth={barWidth}
+        spacing={spacing}
         yAxisTextStyle={{ color: theme.subtext }}
         xAxisLabelTextStyle={{ color: theme.subtext }}
         yAxisLabelSuffix="本"
-        maxValue={Math.max(...chartData.map(d => d.value)) + 2} 
-        noOfSections={4} // Y軸の区切り数
+        maxValue={stepValue * 5}
+        noOfSections={4}
+        stepValue={stepValue}
         rulesColor={theme.separator}
         rulesType="dashed"
-        frontColor={theme.primary}
         isAnimated
-        onPress={(item: ChartDataItem) => {
-            if (onBarPress) {
-                onBarPress(item.label);
-            }
+        onPress={(item: { label: string; }) => {
+            const newSelectedYear = item.label === selectedYear ? null : item.label;
+            setSelectedYear(newSelectedYear);
+            onYearSelect(newSelectedYear);
         }}
-        renderTooltip={(item: ChartDataItem) => (
-            <View style={[
-                styles.tooltip,
-                item.label === selectedYear && { backgroundColor: theme.star }
-            ]}>
-                <Text style={styles.tooltipText}>{item.value}本</Text>
-            </View>
-        )}
       />
     </View>
   );
 };
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
-    container: { alignItems: 'center', paddingVertical: tokens.spacing.m },
-    noDataText: { color: theme.emptyText, textAlign: 'center', padding: tokens.spacing.xl },
-    tooltip: {
-        backgroundColor: theme.primary,
-        paddingHorizontal: tokens.spacing.s,
-        paddingVertical: tokens.spacing.xs,
-        borderRadius: 4,
+    container: { 
+      alignItems: 'center', 
+      paddingVertical: tokens.spacing.m 
     },
-    tooltipText: {
-        color: theme.buttonSelectedText,
-        fontSize: 12,
-        fontWeight: 'bold',
+    loadingContainer: { 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      height: 150 
+    },
+    noDataText: { 
+      color: theme.emptyText, 
+      textAlign: 'center', 
+      padding: tokens.spacing.xl 
     },
 });

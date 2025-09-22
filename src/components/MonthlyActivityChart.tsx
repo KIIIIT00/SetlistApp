@@ -1,52 +1,89 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { BarChart } from "react-native-gifted-charts";
 import { useTheme } from '../context/ThemeContext';
 import { AppTheme, tokens } from '../theme';
-import { MonthlyActivity } from '../database/db';
+import { getMonthlyActivity, MonthlyActivity } from '../database/db'; 
 
 type Props = {
-  data: MonthlyActivity[];
+  year: string;
 };
 
-export const MonthlyActivityChart = ({ data }: Props) => {
+export const MonthlyActivityChart = ({ year }: Props) => {
+  const [activity, setActivity] = useState<MonthlyActivity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  if (!data || data.length === 0) {
+  useEffect(() => {
+    const loadData = async () => {
+        if (!year) return;
+        setIsLoading(true);
+        const data = await getMonthlyActivity(year);
+        setActivity(data);
+        setIsLoading(false);
+    };
+    loadData();
+  }, [year]);
+
+  const fullMonthData = useMemo(() => {
+      return Array.from({ length: 12 }, (_, i) => {
+          const month = String(i + 1).padStart(2, '0');
+          const existingData = activity.find(d => d.month === month);
+          return {
+            value: existingData ? existingData.count : 0,
+            label: `${i + 1}月`,
+          };
+      });
+  }, [activity]);
+
+  if (isLoading) {
+    return <View style={styles.loadingContainer}><Text style={styles.noDataText}>読み込み中...</Text></View>;
+  }
+
+  if (!activity || activity.length === 0) {
     return <Text style={styles.noDataText}>データがありません</Text>;
   }
 
-  const fullMonthData = Array.from({ length: 12 }, (_, i) => {
-    const month = String(i + 1).padStart(2, '0');
-    const existingData = data.find(d => d.month === month);
-    return {
-      value: existingData ? existingData.count : 0,
-      label: `${i + 1}月`,
-    };
-  });
+  const maxValue = Math.max(...fullMonthData.map(d => d.value), 4);
+  const stepValue = Math.ceil(maxValue / 5) || 1;
 
   return (
-    <View style={styles.container}>
-      <BarChart
-        data={fullMonthData}
-        barWidth={18}
-        spacing={8}
-        yAxisTextStyle={{ color: theme.subtext }}
-        xAxisLabelTextStyle={{ color: theme.subtext, fontSize: 10 }}
-        yAxisLabelSuffix="本"
-        maxValue={Math.max(...fullMonthData.map(d => d.value)) + 1}
-        noOfSections={3}
-        rulesColor={theme.separator}
-        rulesType="dashed"
-        frontColor={theme.primary}
-        isAnimated
-      />
-    </View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.container}>
+        <BarChart
+            data={fullMonthData}
+            barWidth={25}
+            spacing={20}
+            yAxisTextStyle={{ color: theme.subtext }}
+            yAxisLabelSuffix="本"
+            xAxisLabelTextStyle={{ color: theme.subtext }}
+            maxValue={stepValue * 5}
+            noOfSections={5}
+            stepValue={stepValue}
+            rulesColor={theme.separator}
+            rulesType="dashed"
+            frontColor={theme.primary}
+            isAnimated
+        />
+        </View>
+    </ScrollView>
   );
 };
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
-    container: { alignItems: 'center', paddingVertical: tokens.spacing.m, paddingLeft: tokens.spacing.s },
-    noDataText: { color: theme.emptyText, textAlign: 'center', padding: tokens.spacing.xl },
+  container: { 
+    paddingRight: tokens.spacing.l, 
+    paddingVertical: tokens.spacing.m,
+  },
+  loadingContainer: { 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    height: 150 
+  },
+  noDataText: { 
+    color: theme.emptyText, 
+    textAlign: 'center', 
+    padding: tokens.spacing.xl 
+  },
 });
