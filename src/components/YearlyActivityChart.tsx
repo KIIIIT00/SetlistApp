@@ -6,7 +6,6 @@ import { getYearlyActivity, YearlyActivity } from '../database/db';
 import { useTheme } from '../context/ThemeContext';
 import { AppTheme, tokens } from '../theme';
 
-// --- ★★★ ここから修正 ★★★ ---
 type Props = {
   onYearSelect: (year: string | null) => void;
 };
@@ -42,7 +41,6 @@ export const YearlyActivityChart = ({ onYearSelect }: Props) => {
         frontColor: item.year === selectedYear ? theme.primary : theme.subtext,
     }));
   }, [activity, selectedYear, theme]);
-  // --- ★★★ ここまで修正 ★★★ ---
 
   if (isLoading) {
     return <View style={styles.loadingContainer}><ActivityIndicator /></View>;
