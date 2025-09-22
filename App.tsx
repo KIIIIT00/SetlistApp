@@ -23,6 +23,8 @@ import { GraphScreen } from './src/screens/GraphScreen';
 import { ArtistSongScreen } from './src/screens/ArtistSongScreen';
 import { VenueDetailScreen } from './src/screens/VenueDetail';
 import { HowToUseScreen } from './src/screens/HowToUseScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
+import { checkOnboardingStatus, setOnboardingComplete } from './src/utils/onboarding'; 
 
 export type RootStackParamList = {
     LiveList: undefined;
@@ -38,6 +40,7 @@ export type RootStackParamList = {
     Calendar: undefined;
     VenueDetail: { venueName: string };
     HowToUse: undefined;
+    Onboarding: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -125,23 +128,33 @@ const AppNavigator = () => {
 
 export default function App() {
     const [dbInitialized, setDbInitialized] = useState(false);
+    const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
 
     useEffect(() => {
-        initDatabase()
-            .then(() => {
+        const prepareApp = async () => {
+            try {
+                await initDatabase();
                 setDbInitialized(true);
-                console.log('Database is ready.');
-            })
-            .catch((error) => {
-                console.error('Database initialization failed:', error);
-            });
+
+                const hasCompleted = await checkOnboardingStatus();
+                setHasCompletedOnboarding(hasCompleted);
+            } catch (e) {
+                console.warn(e);
+            }
+        };
+        prepareApp();
     }, []);
 
-    if (!dbInitialized) {
+    const handleOnboardingComplete = async () => {
+        await setOnboardingComplete();
+        setHasCompletedOnboarding(true);
+    };
+
+    if (!dbInitialized || hasCompletedOnboarding === null) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" />
-                <Text style={styles.loadingText}>データベースを準備中...</Text>
+                <Text style={styles.loadingText}>準備中...</Text>
             </View>
         );
     }
@@ -149,7 +162,11 @@ export default function App() {
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <ThemeProvider>
-                <AppNavigator />
+                {hasCompletedOnboarding ? (
+                    <AppNavigator />
+                ) : (
+                    <OnboardingScreen onComplete={handleOnboardingComplete} />
+                )}
                 <Toast />
             </ThemeProvider>
         </GestureHandlerRootView>
