@@ -2,15 +2,22 @@ import React from 'react';
 import { View, Text, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+
+import { RootStackParamList } from '../../App';
 import { saveRankingLimit, loadRankingLimit, ThemePreference } from '../utils/setting';
 import { useTheme } from '../context/ThemeContext';
 import { tokens, AppTheme } from '../theme';
+
+type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 
 export const SettingsScreen = () => {
     const { theme, themePreference, setThemePreference } = useTheme();
     const styles = createStyles(theme);
     const [rankingLimit, setRankingLimit] = React.useState(5);
+    const navigation = useNavigation<SettingsScreenNavigationProp>();
 
     useFocusEffect(
         React.useCallback(() => {
@@ -42,7 +49,6 @@ export const SettingsScreen = () => {
 
 return (
         <View style={styles.container}>
-            {/* テーマ設定 */}
             <View style={styles.settingItem}>
                 <Text style={styles.label}>テーマ設定</Text>
                 <View style={[styles.optionsContainer, { justifyContent: 'space-around' }]}>
@@ -105,6 +111,14 @@ return (
                     ))}
                 </View>
             </View>
+            <View style={styles.settingItem}>
+                <Text style={styles.label}>サポート</Text>
+                <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('HowToUse')}>
+                    <Ionicons name="help-circle-outline" size={22} color={theme.icon} style={styles.icon} />
+                    <Text style={styles.label}>アプリの使い方</Text>
+                    <Ionicons name="chevron-forward" size={22} color={theme.subtext} />
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };
@@ -152,5 +166,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     },
     optionTextSelected: {
         color: theme.buttonSelectedText,
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.card,
+        paddingHorizontal: tokens.spacing.l,
+        paddingVertical: tokens.spacing.m,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.separator,
+    },
+    icon: {
+        marginRight: tokens.spacing.l,
     },
 });

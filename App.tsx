@@ -22,6 +22,7 @@ import { CalendarScreen } from './src/screens/CalendarScreen';
 import { GraphScreen } from './src/screens/GraphScreen';
 import { ArtistSongScreen } from './src/screens/ArtistSongScreen';
 import { VenueDetailScreen } from './src/screens/VenueDetail';
+import { HowToUseScreen } from './src/screens/HowToUseScreen';
 
 export type RootStackParamList = {
     LiveList: undefined;
@@ -36,6 +37,7 @@ export type RootStackParamList = {
     ArtistSongs: { artistName: string };
     Calendar: undefined;
     VenueDetail: { venueName: string };
+    HowToUse: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -104,6 +106,11 @@ const AppNavigator = () => {
                     name="VenueDetail"
                     component={VenueDetailScreen}
                     options={({ route }) => ({ title: route.params.venueName })}
+                />
+                <Stack.Screen
+                    name="HowToUse"
+                    component={HowToUseScreen}
+                    options={{ title: 'アプリの使い方' }}
                 />
                 <Stack.Screen 
                   name="Calendar" 
