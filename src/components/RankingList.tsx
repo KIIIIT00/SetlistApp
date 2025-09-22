@@ -1,15 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { RankingItem } from '../database/db';
 import { useTheme } from '../context/ThemeContext';
 import { AppTheme, tokens } from '../theme';
 
-interface RankingListProps {
+type Props = {
   data: RankingItem[];
+  onItemPress?: (item: RankingItem) => void;
   unit?: string;
 }
 
-export const RankingList = ({ data }: RankingListProps) => {
+// interface RankingListProps {
+//   data: RankingItem[];
+//   unit?: string;
+// }
+
+export const RankingList = ({ data, onItemPress, unit = '回' }: Props) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
@@ -17,16 +23,36 @@ export const RankingList = ({ data }: RankingListProps) => {
     return <Text style={styles.noDataText}>データがありません</Text>;
   }
 
+  const renderItem = ({ item }: { item: RankingItem }) => {
+    const content = (
+      <>
+        <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.itemCount}>{item.count}{unit}</Text>
+      </>
+    );
+
+    if (onItemPress) {
+      return (
+        <TouchableOpacity onPress={() => onItemPress(item)} style={styles.itemContainer}>
+          {content}
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <View style={styles.itemContainer}>
+        {content}
+      </View>
+    );
+  };
+
   return (
-    <View>
-      {data.map((item, index) => (
-        <View key={index} style={styles.itemContainer}>
-          <Text style={styles.rank}>{index + 1}.</Text>
-          <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.count}>{item.count}</Text>
-        </View>
-      ))}
-    </View>
+    <FlatList
+      data={data}
+      renderItem={renderItem}
+      keyExtractor={(item, index) => `${item.name}-${index}`}
+      scrollEnabled={false}
+    />
   );
 };
 
@@ -42,13 +68,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.subtext,
     width: 30,
   },
-  name: {
+  itemName: {
     flex: 1,
     fontSize: 16,
     color: theme.text,
     marginHorizontal: tokens.spacing.s,
   },
-  count: {
+  itemCount: {
     fontSize: 16,
     fontWeight: 'bold',
     color: theme.text,

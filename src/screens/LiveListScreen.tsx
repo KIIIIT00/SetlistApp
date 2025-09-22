@@ -11,7 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { tokens, AppTheme } from '../theme';
 import { FilterModal, FilterSortOptions } from '../components/FilterModal';
 import { ActiveFilters } from '../components/ActiveFilters';
-
+import { LiveListItem } from '../components/LiveListItem'; 
 
 const initialFilterSortOptions: FilterSortOptions = {
     artist: '',

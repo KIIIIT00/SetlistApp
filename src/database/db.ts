@@ -617,3 +617,25 @@ export const getSongStatsForArtist = async (artistName: string): Promise<SongSta
         throw error;
     }
 };
+
+/**
+ * @function getLivesByVenue
+ * @description 特定の会場で開催されたライブの一覧を取得する
+ * @param {string} venueName - 会場名
+ * @returns {Promise<Live[]>}
+ */
+export const getLivesByVenue = async (venueName: string): Promise<Live[]> => {
+    try {
+        const query = `
+            SELECT *
+            FROM lives
+            WHERE venueName = ?
+            ORDER BY liveDate DESC;
+        `;
+        const results = await db.getAllAsync<Live>(query, [venueName]);
+        return results;
+    } catch (error) {
+        console.error(`Failed to get lives for venue ${venueName}`, error);
+        throw error;
+    }
+};

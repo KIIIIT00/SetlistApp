@@ -18,18 +18,21 @@ import { RankingList } from '../components/RankingList';
 import { loadRankingLimit } from '../utils/setting';
 import { useTheme } from '../context/ThemeContext';
 import { tokens, AppTheme } from '../theme';
+import { RootStackParamList } from '../../App';
 
-export type RootStackParamList = {
-  LiveList: undefined;
-  AddLive: { liveId?: number };
-  LiveDetail: { liveId: number };
-  EditSetlist: { liveId: number; artistName?: string; };
-  Settings: undefined;
-  MemoDetail: {liveId: number};
-  Stats: undefined;
-  Graph: undefined;
-  Calendar: undefined;
-};
+// export type RootStackParamList = {
+//   LiveList: undefined;
+//   AddLive: { liveId?: number };
+//   LiveDetail: { liveId: number };
+//   EditSetlist: { liveId: number; artistName?: string; };
+//   Settings: undefined;
+//   MemoDetail: {liveId: number};
+//   Stats: undefined;
+//   Graph: undefined;
+//   Calendar: undefined;
+//   ArtistSongs: { artistName: string };
+//   VenueDetail: { venueName: string };
+// };
 
 export const StatsScreen = () => {
   const [summary, setSummary] = useState<StatsSummary | null>(null);
@@ -46,6 +49,14 @@ export const StatsScreen = () => {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleArtistPress = (item: RankingItem) => {
+    navigation.navigate('ArtistSongs', { artistName: item.name });
+  };
+
+  const handleVenuePress = (item: RankingItem) => {
+    navigation.navigate('VenueDetail', { venueName: item.name });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -117,11 +128,11 @@ export const StatsScreen = () => {
       </StatsCard>
 
       <StatsCard title={`アーティスト別 参加ライブ数 TOP${rankingLimit}`}>
-        <RankingList data={artistRank} />
+        <RankingList data={artistRank} onItemPress={handleArtistPress} />
       </StatsCard>
 
       <StatsCard title={`会場別 参加ライブ数 TOP${rankingLimit}`}>
-        <RankingList data={venueRank} />
+        <RankingList data={venueRank} onItemPress={handleVenuePress} />
       </StatsCard>
 
       <StatsCard title={`全楽曲 演奏回数 TOP${songRankingLimit}`}>
