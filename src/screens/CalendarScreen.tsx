@@ -126,43 +126,6 @@ export const CalendarScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    centered: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    listContainer: {
-        flex: 1,
-        borderTopWidth: 1,
-        borderTopColor: '#eee',
-    },
-    liveItem: {
-        backgroundColor: '#fff',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
-    liveItemTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    liveItemArtist: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 4,
-    },
-    noDataText: {
-        color: '#888',
-        fontSize: 16,
-    },
-});
-
 const createStyles = (theme: AppTheme) => StyleSheet.create({
     container: {
         flex: 1,

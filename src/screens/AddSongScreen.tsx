@@ -109,6 +109,6 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 100,
-    textAlignVertical: 'top', // Androidでテキストを上揃えにする
+    textAlignVertical: 'top',
   },
 });

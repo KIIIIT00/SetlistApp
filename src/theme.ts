@@ -104,9 +104,9 @@ export const tokens = {
 };
 
 export const navigationLightTheme = {
-    ...DefaultTheme, // DefaultThemeを基に設定
+    ...DefaultTheme,
     colors: {
-    ...DefaultTheme.colors, // デフォルトの色設定を維持
+    ...DefaultTheme.colors,
     primary: tokens.colors.light.primary,
     background: tokens.colors.light.background,
     card: tokens.colors.light.card,
@@ -116,9 +116,9 @@ export const navigationLightTheme = {
 };
 
 export const navigationDarkTheme = {
-    ...DarkTheme, // DarkThemeを基に設定
+    ...DarkTheme,
     colors: {
-    ...DarkTheme.colors, // デフォルトの色設定を維持
+    ...DarkTheme.colors,
     primary: tokens.colors.dark.primary,
     background: tokens.colors.dark.background,
     card: tokens.colors.dark.card,

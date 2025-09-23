@@ -62,18 +62,6 @@ export const AddLiveScreen = ({ route, navigation }: AddLiveScreenProps) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5'
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-});
-
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,

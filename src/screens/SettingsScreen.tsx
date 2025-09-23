@@ -122,6 +122,7 @@ return (
         </View>
     );
 };
+
 const createStyles = (theme: AppTheme) => StyleSheet.create({
     container: {
         flex: 1,

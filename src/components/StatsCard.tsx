@@ -44,23 +44,3 @@ const createStyles = (theme: AppTheme, isLightMode: boolean) => StyleSheet.creat
     marginBottom: tokens.spacing.m,
   },
 });
-
-// const styles = StyleSheet.create({
-//   card: {
-//     backgroundColor: '#fff',
-//     borderRadius: 8,
-//     padding: 16,
-//     marginHorizontal: 16,
-//     marginTop: 16,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 1 },
-//     shadowOpacity: 0.1,
-//     shadowRadius: 2,
-//     elevation: 2,
-//   },
-//   cardTitle: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     marginBottom: 12,
-//   },
-// });

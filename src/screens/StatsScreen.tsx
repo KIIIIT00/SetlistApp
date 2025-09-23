@@ -142,7 +142,6 @@ export const StatsScreen = () => {
   );
 };
 
-// --- スタイル定義 ---
 const createStyles = (theme: AppTheme) => StyleSheet.create({
     container: {
         flex: 1,

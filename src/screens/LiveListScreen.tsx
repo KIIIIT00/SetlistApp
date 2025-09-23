@@ -381,7 +381,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         justifyContent: 'center', 
         alignItems: 'center', 
         paddingHorizontal: tokens.spacing.xxl,
-        backgroundColor: theme.background, // 背景色を明示
+        backgroundColor: theme.background,
     },
     emptyTitle: {
         ...tokens.typography.title,

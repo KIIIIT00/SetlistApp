@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Live, Setlist } from '../database/db';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+import { AppTheme, tokens } from '../theme';
 
 type Props = {
   live: Live | null;
@@ -9,6 +11,9 @@ type Props = {
 };
 
 export const ShareableImage: React.FC<Props> = ({ live, setlist }) => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  
   if (!live) return null;
 
   return (
@@ -16,15 +21,15 @@ export const ShareableImage: React.FC<Props> = ({ live, setlist }) => {
       {/* ヘッダー */}
       <Text style={styles.liveName}>{live.liveName}</Text>
       <View style={styles.infoRow}>
-        <MaterialCommunityIcons name="account-music" size={16} color="#555" />
+        <MaterialCommunityIcons name="account-music" size={16} color={theme.subtext} />
         <Text style={styles.infoText}>{live.artistName}</Text>
       </View>
       <View style={styles.infoRow}>
-        <Ionicons name="calendar-outline" size={16} color="#555" />
+        <Ionicons name="calendar-outline" size={16} color={theme.subtext} />
         <Text style={styles.infoText}>{live.liveDate}</Text>
       </View>
       <View style={styles.infoRow}>
-        <Ionicons name="location-outline" size={16} color="#555" />
+        <Ionicons name="location-outline" size={16} color={theme.subtext} />
         <Text style={styles.infoText}>{live.venueName}</Text>
       </View>
 
@@ -72,7 +77,7 @@ export const ShareableImage: React.FC<Props> = ({ live, setlist }) => {
 };
 
 // --- スタイル定義 ---
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
     container: {
         width: 375,
         padding: 24,
@@ -86,40 +91,40 @@ const styles = StyleSheet.create({
     artistName: {
         fontSize: 18,
         color: '#374151',
-        marginBottom: 16,
+        marginBottom: tokens.spacing.xl,
     },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 4,
+        marginTop: tokens.spacing.xs,
     },
     infoText: {
         fontSize: 14,
         color: '#4B5563',
-        marginLeft: 8,
+        marginLeft: tokens.spacing.s,
     },
     divider: {
         height: 1,
         backgroundColor: '#D1D5DB',
-        marginVertical: 20,
+        marginVertical: tokens.spacing.xxl,
     },
     sectionTitle: {
         fontSize: 16,
         fontWeight: 'bold',
         color: '#111827',
-        marginBottom: 12,
+        marginBottom: tokens.spacing.l,
     },
     setlistHeader: {
         fontSize: 14,
         color: '#4B5563',
         fontWeight: '600',
-        marginTop: 12,
-        marginBottom: 8,
+        marginTop: tokens.spacing.l,
+        marginBottom: tokens.spacing.s,
     },
     setlistItem: {
         fontSize: 14,
         color: '#374151',
-        paddingVertical: 4,
+        paddingVertical: tokens.spacing.xs,
     },
     tagsContainer: {
         flexDirection: 'row',
@@ -128,10 +133,10 @@ const styles = StyleSheet.create({
     tag: {
         backgroundColor: '#DBEAFE',
         borderRadius: 12,
-        paddingVertical: 4,
-        paddingHorizontal: 10,
-        marginRight: 6,
-        marginBottom: 6,
+        paddingVertical: tokens.spacing.xs,
+        paddingHorizontal: tokens.spacing.m,
+        marginRight: tokens.spacing.ss,
+        marginBottom: tokens.spacing.ss,
     },
     tagText: {
         fontSize: 12,

@@ -59,53 +59,6 @@ export const MemoDetailScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  liveName: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  detailText: {
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 12,
-  },
-  starReadOnlyContainer: {
-    flexDirection: 'row',
-    marginLeft: 12,
-  },
-  memoContainer: {
-    marginTop: 16,
-    backgroundColor: '#fff',
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  memoText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-  },
-});
-
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
